@@ -1,0 +1,28 @@
+{
+  "name": "@left4code/tw-starter",
+  "version": "1.1.0",
+  "description": "tw-starter",
+  "main": "js/index.js",
+  "author": "left4code",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@popperjs/core": "^2.6.0",
+    "browser-sync": "^2.26.14",
+    "browser-sync-webpack-plugin": "2.2.2",
+    "cash-dom": "^8.1.0",
+    "laravel-mix": "^6.0.11",
+    "postcss": "^8.2.6",
+    "sass": "^1.32.7",
+    "sass-loader": "8.*",
+    "velocity-animate": "^1.5.2",
+    "autoprefixer": "^10.2.4",
+    "tailwindcss": "^2.0.3"
+  },
+  "scripts": {
+    "development": "mix",
+    "watch": "mix watch",
+    "watch-poll": "mix watch -- --watch-options-poll=1000",
+    "hot": "mix watch --hot",
+    "production": "mix --production"
+  }
+}

@@ -1,0 +1,77 @@
+@layer components {
+  .alert {
+    @apply relative rounded-md px-5 py-4;
+    &:not(.show) {
+      @apply hidden;
+    }
+    &.alert-dismissible {
+      @apply pl-5 pr-16;
+    }
+    .btn-close {
+      @apply btn shadow-none border-0 absolute right-0 my-auto mr-2;
+      &:focus {
+        @apply ring-0;
+      }
+    }
+  }
+
+  // Alert Colors
+  .alert-primary {
+    @apply bg-primary-1 text-white;
+  }
+  .alert-secondary {
+    @apply bg-gray-200 text-gray-600 dark:bg-dark-5 dark:text-gray-400;
+  }
+  .alert-success {
+    @apply bg-primary-4 text-white;
+  }
+  .alert-warning {
+    @apply bg-primary-7 text-gray-900;
+  }
+  .alert-danger {
+    @apply bg-primary-3 text-white;
+  }
+  .alert-dark {
+    @apply bg-gray-800 text-white dark:bg-dark-6 dark:text-gray-400;
+  }
+
+  // Outline Button
+  .alert-outline-primary {
+    @apply border border-primary-1 text-primary-1 dark:border-primary-2 dark:text-primary-2;
+  }
+  .alert-outline-secondary {
+    @apply border border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-400;
+  }
+  .alert-outline-success {
+    @apply border border-primary-4 text-primary-4 dark:border-primary-4;
+  }
+  .alert-outline-warning {
+    @apply border border-primary-7 text-primary-7 dark:border-primary-7;
+  }
+  .alert-outline-danger {
+    @apply border border-primary-3 text-primary-3 dark:border-primary-3;
+  }
+  .alert-outline-dark {
+    @apply border border-gray-800 text-gray-800 dark:border-gray-700 dark:text-gray-500;
+  }
+
+  // Button Soft Colors
+  .alert-primary-soft {
+    @apply bg-primary-1 border-primary-1 bg-opacity-20 border-opacity-5 text-primary-5;
+  }
+  .alert-secondary-soft {
+    @apply bg-gray-300 border-gray-300 bg-opacity-20 border-opacity-5 text-gray-500;
+  }
+  .alert-success-soft {
+    @apply bg-primary-4 border-primary-4 bg-opacity-20 border-opacity-5 text-primary-4;
+  }
+  .alert-warning-soft {
+    @apply bg-primary-7 border-primary-7 bg-opacity-20 border-opacity-5 text-primary-6;
+  }
+  .alert-danger-soft {
+    @apply bg-primary-3 border-primary-3 bg-opacity-20 border-opacity-5 text-primary-3;
+  }
+  .alert-dark-soft {
+    @apply bg-gray-800 border-gray-800 bg-opacity-20 border-opacity-5 text-gray-600;
+  }
+}

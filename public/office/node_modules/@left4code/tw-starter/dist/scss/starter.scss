@@ -1,0 +1,33 @@
+// Tailwind Core
+@import "tailwind";
+
+// Mixins
+@import "mixins/media";
+
+// Breakpoint
+@import "breakpoint";
+
+// Components
+@import "accordion";
+@import "alert";
+@import "box";
+@import "btn";
+@import "dropdown";
+@import "file";
+@import "form-check";
+@import "form-control";
+@import "form-help";
+@import "form-inline";
+@import "form-label";
+@import "form-select";
+@import "image-fit";
+@import "input-group";
+@import "intro";
+@import "modal";
+@import "pagination";
+@import "progress";
+@import "scrollbar";
+@import "tab";
+@import "table";
+@import "typing-dots";
+@import "zoom-in";
