@@ -221,8 +221,16 @@
             }
         }
         @media (max-width: 767.98px) {
+            .info-section {
+                display: none !important;
+            }
+            .main-container {
+                grid-template-columns: 1fr;
+                max-width: 480px;
+            }
             .dlab-login {
                 padding: 16px 14px 20px;
+                justify-content: center;
             }
             .top-head {
                 margin-bottom: 16px;
@@ -239,13 +247,8 @@
             .main-container {
                 border-radius: 24px;
             }
-            .info-section,
             .login-section {
-                padding: 22px;
-            }
-            .info-section h2 {
-                font-size: 1.3rem;
-                margin-bottom: 0.8rem !important;
+                padding: 28px 24px;
             }
             .info-section > p {
                 margin-bottom: 1.35rem !important;

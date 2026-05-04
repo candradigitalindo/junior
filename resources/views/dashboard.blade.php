@@ -136,50 +136,81 @@
         <!-- Secondary Feed -->
         <div class="g-col-12 g-col-lg-6 mt-6 intro-y">
             <div class="box p-5 h-full d-flex flex-column">
-                <h2 class="fw-bold fs-lg mb-5">Transaksi Terakhir</h2>
-                <div class="grid grid-cols-1 gap-4 flex-1">
-                    @foreach ($recent['transactions'] as $trx)
-                        <div class="d-flex align-items-center p-3 rounded-2 hover-bg-gray-100 transition-all border border-gray-100">
-                            <div class="w-12 h-12 flex-none bg-success/10 rounded-2 d-flex align-items-center justify-content-center">
-                                <i data-feather="wallet" class="text-success"></i>
+                <div class="d-flex align-items-center mb-4">
+                    <h2 class="fw-bold fs-lg me-auto mb-0">Transaksi Terakhir</h2>
+                    <span class="badge bg-success/15 text-success rounded-pill px-3 fs-xs">{{ count($recent['transactions']) }} transaksi</span>
+                </div>
+                <div class="d-flex flex-column gap-2 flex-1">
+                    @forelse ($recent['transactions'] as $trx)
+                        <div class="d-flex align-items-center gap-3 px-3 py-2 rounded-2 trx-row">
+                            <div class="flex-none">
+                                @php
+                                    $mp = strtolower($trx->metode_pembayaran ?? '');
+                                    $mpColor = str_contains($mp, 'cash') ? 'success' : (str_contains($mp, 'qris') ? 'warning' : 'primary');
+                                    $mpIcon  = str_contains($mp, 'cash') ? 'dollar-sign' : (str_contains($mp, 'qris') ? 'grid' : 'credit-card');
+                                @endphp
+                                <div class="w-9 h-9 rounded-circle bg-{{ $mpColor }}/10 d-flex align-items-center justify-content-center">
+                                    <i data-feather="{{ $mpIcon }}" class="text-{{ $mpColor }}" style="width:15px;height:15px;"></i>
+                                </div>
                             </div>
-                            <div class="ms-4">
-                                <div class="fw-bold text-dark">{{ $trx->no_pol_kendaraan }}</div>
-                                <div class="text-gray-500 fs-xs">{{ $trx->created_at->format('d M Y H:i') }}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-semibold text-dark fs-sm text-truncate">{{ $trx->no_pol_kendaraan }}</span>
+                                    <span class="badge bg-{{ $mpColor }}/15 text-{{ $mpColor }} rounded-pill px-2" style="font-size:10px;">{{ strtoupper($trx->metode_pembayaran) }}</span>
+                                </div>
+                                <div class="text-gray-400 fs-xs text-truncate mt-0.5">{{ $trx->product_name }}</div>
                             </div>
-                            <div class="ms-auto text-end">
-                                <div class="fw-bold text-success">Rp {{ number_format($trx->total, 0, ',', '.') }}</div>
-                                <div class="text-gray-400 fs-xs">{{ $trx->metode_pembayaran }}</div>
+                            <div class="text-end flex-none">
+                                <div class="fw-bold text-dark fs-sm">Rp {{ number_format($trx->total, 0, ',', '.') }}</div>
+                                <div class="text-gray-400 fs-xs">{{ $trx->tgl_bayar ? \Carbon\Carbon::parse($trx->tgl_bayar)->format('d/m H:i') : $trx->created_at->format('d/m H:i') }}</div>
                             </div>
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="text-center text-gray-400 py-5">
+                            <i data-feather="inbox" class="mb-2" style="width:28px;height:28px;opacity:.4;"></i>
+                            <div class="fs-sm">Belum ada transaksi</div>
+                        </div>
+                    @endforelse
                 </div>
-                <a href="{{ route('admin.transaksi') }}" class="btn btn-outline-secondary w-full border-dotted mt-5">Riwayat Transaksi</a>
+                <a href="{{ route('admin.transaksi') }}" class="btn btn-outline-secondary w-full border-dotted mt-4">Riwayat Transaksi</a>
             </div>
         </div>
 
         <div class="g-col-12 g-col-lg-6 mt-6 intro-y">
             <div class="box p-5 h-full d-flex flex-column">
-                <h2 class="fw-bold fs-lg mb-5">Aktivitas Terkini</h2>
-                <div class="report-timeline relative flex-1">
-                    @foreach ($recent['activities'] as $item)
-                        <div class="intro-x relative d-flex align-items-center mb-5">
-                            <div class="report-timeline__image">
-                                <div class="w-10 h-10 flex-none bg-primary/10 rounded-full d-flex align-items-center justify-content-center">
-                                    <i data-feather="activity" class="text-primary w-5 h-5"></i>
+                <div class="d-flex align-items-center mb-4">
+                    <h2 class="fw-bold fs-lg me-auto mb-0">Aktivitas Terkini</h2>
+                    <span class="badge bg-primary/10 text-primary rounded-pill px-3 fs-xs">Log</span>
+                </div>
+                <div class="d-flex flex-column gap-0 flex-1">
+                    @forelse ($recent['activities'] as $i => $item)
+                        <div class="d-flex gap-3 pb-3 {{ !$loop->last ? 'border-bottom border-gray-100 mb-3' : '' }}">
+                            <div class="flex-none d-flex flex-column align-items-center">
+                                <div class="w-8 h-8 rounded-circle bg-primary/10 d-flex align-items-center justify-content-center">
+                                    <i data-feather="clock" class="text-primary" style="width:13px;height:13px;"></i>
                                 </div>
+                                @if (!$loop->last)
+                                    <div style="width:1px;flex:1;background:rgba(0,0,0,0.06);margin-top:4px;"></div>
+                                @endif
                             </div>
-                            <div class="box px-5 py-3 ms-4 flex-1 zoom-in">
-                                <div class="d-flex align-items-center">
-                                    <div class="fw-bold">{{ $item->booking->no_pol_kendaraan }}</div>
-                                    <div class="fs-xs text-gray-500 ms-auto">{{ $item->created_at->diffForHumans() }}</div>
+                            <div class="flex-1 min-w-0 pb-1">
+                                <div class="d-flex align-items-center gap-2 mb-0.5">
+                                    <span class="fw-semibold text-dark fs-sm">
+                                        {{ $item->booking?->no_pol_kendaraan ?? '—' }}
+                                    </span>
+                                    <span class="text-gray-400 fs-xs ms-auto">{{ $item->created_at->diffForHumans() }}</span>
                                 </div>
-                                <div class="text-gray-600 mt-1 small">{{ $item->histori }}</div>
+                                <div class="text-gray-500 fs-xs">{{ $item->histori }}</div>
                             </div>
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="text-center text-gray-400 py-5">
+                            <i data-feather="activity" class="mb-2" style="width:28px;height:28px;opacity:.4;"></i>
+                            <div class="fs-sm">Belum ada aktivitas</div>
+                        </div>
+                    @endforelse
                 </div>
-                <a href="{{ route('admin.histori') }}" class="btn btn-outline-secondary w-full border-dotted mt-2">Log Seluruh Aktivitas</a>
+                <a href="{{ route('admin.histori') }}" class="btn btn-outline-secondary w-full border-dotted mt-3">Log Seluruh Aktivitas</a>
             </div>
         </div>
     </div>
@@ -207,6 +238,12 @@
         }
         .hover-bg-gray-100:hover {
             background-color: rgba(0,0,0,0.02);
+        }
+        .trx-row {
+            transition: background .15s;
+        }
+        .trx-row:hover {
+            background-color: rgba(0,0,0,0.025);
         }
 
         /* Force remove all header borders */

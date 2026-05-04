@@ -41,8 +41,8 @@ class DashboardController extends Controller
 
         // Recent Data
         $recent = [
-            'transactions' => Transaksi::whereNotNull('tgl_bayar')->orderBy('created_at', 'DESC')->limit(5)->get(),
-            'activities'   => Histori::with('booking')->orderBy('created_at', 'DESC')->limit(5)->get(),
+            'transactions' => Transaksi::with('booking')->whereNotNull('tgl_bayar')->orderBy('tgl_bayar', 'DESC')->limit(6)->get(),
+            'activities'   => Histori::with('booking')->orderBy('created_at', 'DESC')->limit(6)->get(),
             'bookings'     => Booking::orderBy('tgl_booking', 'DESC')->orderBy('waktu_booking', 'DESC')->limit(7)->get(),
         ];
 
@@ -70,13 +70,13 @@ class DashboardController extends Controller
             ->get()
             ->pluck('total', 'month');
 
-        $monthlyExpense = Pengeluaran::selectRaw($driver == 'sqlite' ? "strftime('%m', created_at) as month, SUM(jumlah) as total" : "MONTH(created_at) as month, SUM(jumlah) as total")
+        $monthlyExpense = Pengeluaran::selectRaw($driver == 'sqlite' ? "strftime('%m', created_at) as month, SUM(jumlah) as total" : ($driver == 'pgsql' ? "EXTRACT(MONTH FROM created_at) as month, SUM(jumlah) as total" : "MONTH(created_at) as month, SUM(jumlah) as total"))
             ->whereYear('created_at', $year)
             ->groupBy('month')
             ->get()
             ->pluck('total', 'month');
 
-        $monthlyOtherIncome = Pemasukan::selectRaw($driver == 'sqlite' ? "strftime('%m', created_at) as month, SUM(jumlah) as total" : "MONTH(created_at) as month, SUM(jumlah) as total")
+        $monthlyOtherIncome = Pemasukan::selectRaw($driver == 'sqlite' ? "strftime('%m', created_at) as month, SUM(jumlah) as total" : ($driver == 'pgsql' ? "EXTRACT(MONTH FROM created_at) as month, SUM(jumlah) as total" : "MONTH(created_at) as month, SUM(jumlah) as total"))
             ->whereYear('created_at', $year)
             ->groupBy('month')
             ->get()
@@ -120,14 +120,14 @@ class DashboardController extends Controller
             ->get()
             ->pluck('total', 'day');
 
-        $dailyExpense = Pengeluaran::selectRaw($driver == 'sqlite' ? "strftime('%d', created_at) as day, SUM(jumlah) as total" : "DAY(created_at) as day, SUM(jumlah) as total")
+        $dailyExpense = Pengeluaran::selectRaw($driver == 'sqlite' ? "strftime('%d', created_at) as day, SUM(jumlah) as total" : ($driver == 'pgsql' ? "EXTRACT(DAY FROM created_at) as day, SUM(jumlah) as total" : "DAY(created_at) as day, SUM(jumlah) as total"))
             ->whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
             ->groupBy('day')
             ->get()
             ->pluck('total', 'day');
 
-        $dailyOtherIncome = Pemasukan::selectRaw($driver == 'sqlite' ? "strftime('%d', created_at) as day, SUM(jumlah) as total" : "DAY(created_at) as day, SUM(jumlah) as total")
+        $dailyOtherIncome = Pemasukan::selectRaw($driver == 'sqlite' ? "strftime('%d', created_at) as day, SUM(jumlah) as total" : ($driver == 'pgsql' ? "EXTRACT(DAY FROM created_at) as day, SUM(jumlah) as total" : "DAY(created_at) as day, SUM(jumlah) as total"))
             ->whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
             ->groupBy('day')
