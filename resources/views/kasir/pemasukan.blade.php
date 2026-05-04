@@ -289,7 +289,7 @@
                                 '</button>' +
                                 '<button class="btn-action btn btn-sm btn-danger text-white delete" id="' + data + '" title="Hapus">' +
                                     '<i data-feather="trash-2" style="width: 14px; height: 14px;"></i>' +
-                                </button>' +
+                                '</button>' +
                             '</div>';
                         }
                     }
