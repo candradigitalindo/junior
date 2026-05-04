@@ -370,10 +370,18 @@ class LoketController extends Controller
     public function serah_terima()
     {
         if (request()->ajax()) {
+            $start = request('start_date');
+            $end = request('end_date');
+
             $booking = Booking::with(['bookingorder:id,booking_id,product_name'])
                 ->orderBy('created_at', 'DESC')
-                ->whereMonth('created_at', date('m'))
-                ->whereYear('created_at', date('Y'));
+                ->when($start && $end, function ($q) use ($start, $end) {
+                    $q->whereDate('created_at', '>=', $start)
+                      ->whereDate('created_at', '<=', $end);
+                }, function ($q) {
+                    $q->whereMonth('created_at', now()->month)
+                      ->whereYear('created_at', now()->year);
+                });
 
             return datatables()->of($booking)
                 ->addIndexColumn()
@@ -381,9 +389,9 @@ class LoketController extends Controller
                     return $row->bookingorder->pluck('product_name')->implode(", ") ?: '-';
                 })
                 ->addColumn('aksi', function ($row) {
-                    return '<div class="flex justify-center items-center">
-                        <a target="_blank" href="' . route('form.cetak', $row->id) . '" class="btn btn-sm btn-dark">
-                            <i data-feather="printer" class="w-4 h-4 mr-1"></i> Cetak Form
+                    return '<div class="d-flex justify-content-center">
+                        <a target="_blank" href="' . route('form.cetak', $row->id) . '" class="btn btn-sm btn-dark px-3 shadow-none" style="background-color: #1e293b;">
+                            <i data-feather="printer" class="w-4 h-4 me-2"></i> Cetak Form
                         </a>
                     </div>';
                 })
