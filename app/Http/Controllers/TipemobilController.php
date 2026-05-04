@@ -6,6 +6,7 @@ use App\Models\Tipemobil;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Validator;
+use Intervention\Image\Facades\Image;
 
 class TipemobilController extends Controller
 {
@@ -16,21 +17,22 @@ class TipemobilController extends Controller
      */
     public function index()
     {
-        $tipemobil = Tipemobil::orderBy('name', 'ASC')->get();
         if (request()->ajax()) {
+            $tipemobil = Tipemobil::query();
             return datatables()->of($tipemobil)
-                ->addColumn('aksi', function ($tipemobil) {
-
-                    $button = "<div class='d-flex justify-content-center align-items-center'>
-                <button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=" . $tipemobil->id . ">Hapus</button>
-                </div>";
-
-                    return $button;
+                ->addIndexColumn()
+                ->addColumn('aksi', function ($row) {
+                    return '<div class="flex justify-center items-center">
+                        <button class="delete btn btn-sm btn-outline-danger w-16" id="' . $row->id . '">Hapus</button>
+                    </div>';
                 })
-                ->editColumn('photo', function ($tipemobil) {
-
-                    $foto = '<center><img src="' . asset('storage/tipemobil/' . $tipemobil->photo) . '" style="width: 200px" style="height: 200px"/></center>';
-                    return $foto;
+                ->editColumn('photo', function ($row) {
+                    $url = $row->photo ? asset('storage/tipemobil/' . $row->photo) : asset('image/no_photo_tipe_mobil.png');
+                    return '<div class="flex justify-center">
+                        <div class="w-24 h-16 image-fit zoom-in">
+                            <img alt="' . $row->name . '" class="rounded-md shadow-md" src="' . $url . '" style="object-fit: contain;">
+                        </div>
+                    </div>';
                 })
                 ->rawColumns(['aksi', 'photo'])
                 ->make(true);
@@ -46,7 +48,7 @@ class TipemobilController extends Controller
     public function create()
     {
         $tipe = Tipemobil::orderBy('name', 'ASC')->get();
-        return response()->json(['data' => $tipe]);
+        return response()->json(['status' => 'sukses', 'data' => $tipe]);
     }
 
     /**
@@ -58,57 +60,48 @@ class TipemobilController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'photo'      => 'required|image|mimes:jpeg,png,jpg',
-            'name'       => 'required|string'
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
+            'name'  => 'required|string|max:255'
         ], [
-            'photo.required'       => 'Isi Kolom Foto',
-            'photo.image'          => 'File harus berupa gambar',
-            'photo.mimes'          => 'File harus berupa jpeg,png,jpg',
-            'name.required'        => 'Isi Kolom Tipe Mobil'
+            'photo.image'   => 'File harus berupa gambar',
+            'photo.mimes'   => 'Format gambar harus jpeg, png, atau jpg',
+            'photo.max'     => 'Ukuran gambar maksimal 10MB',
+            'name.required' => 'Isi Kolom Tipe Mobil'
         ]);
 
-        if ($validator->passes()) {
-            $img = $request->file('photo');
-            $img->storeAs('public/tipemobil', $img->hashName());
-            $tipemobil = Tipemobil::create(['photo' => $img->hashName(), 'name' => strtoupper($request->name)]);
-            return response()->json(['text' => 'Tipe Mobil ' . $tipemobil->name . ' berhasil ditambah.']);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()->all()]);
         }
 
-        return response()->json(['error' => $validator->errors()->all()]);
-    }
+        $photoName = null;
+        if ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            $photoName = $file->hashName();
+            
+            // Image Processing
+            $img = Image::make($file->path());
+            
+            // Resize for vehicle type (usually smaller than documentation)
+            $img->resize(800, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
+            // Ensure directory exists
+            if (!Storage::disk('public')->exists('tipemobil')) {
+                Storage::disk('public')->makeDirectory('tipemobil');
+            }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
+            // Save optimized
+            $img->save(storage_path('app/public/tipemobil/' . $photoName), 85);
+        }
+        
+        $tipemobil = Tipemobil::create([
+            'photo' => $photoName, 
+            'name'  => strtoupper($request->name)
+        ]);
+        
+        return response()->json(['status' => 'sukses', 'text' => 'Tipe Mobil ' . $tipemobil->name . ' berhasil ditambah dengan optimasi gambar.']);
     }
 
     /**
@@ -120,8 +113,17 @@ class TipemobilController extends Controller
     public function destroy($id)
     {
         $tipemobil = Tipemobil::find($id);
-        Storage::disk('local')->delete('public/tipemobil/' . $tipemobil->photo);
+        if (!$tipemobil) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
+        }
+
+        if ($tipemobil->photo) {
+            Storage::disk('local')->delete('public/tipemobil/' . $tipemobil->photo);
+        }
+        
+        $name = $tipemobil->name;
         $tipemobil->delete();
-        return response()->json(['text' => 'Tipe Mobil ' . $tipemobil->name . ' berhasil dihapus.']);
+        
+        return response()->json(['status' => 'sukses', 'text' => 'Tipe Mobil ' . $name . ' berhasil dihapus.']);
     }
 }

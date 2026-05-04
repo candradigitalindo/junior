@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Photocek;
 use App\Models\Transaksi;
+use App\Traits\PlatHelper;
 use Illuminate\Support\Facades\Auth;
 use Validator;
 use PDF;
@@ -19,6 +20,26 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class LoketController extends Controller
 {
+    use PlatHelper;
+
+    private function baseLoketQuery()
+    {
+        return Booking::query()
+            ->where('status', '!=', 'Selesai')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year);
+    }
+
+    private function loketBookingQuery()
+    {
+        return $this->baseLoketQuery()
+            ->with([
+                'bookingorder:id,booking_id,product_name,extraservice_name',
+            ])
+            ->withCount('photocek')
+            ->orderBy('created_at', 'DESC');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -26,184 +47,90 @@ class LoketController extends Controller
      */
     public function index()
     {
-        $booking = Booking::where('status', '!=', 'Selesai')->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->orderBy('created_at', 'DESC')->get();
         if (request()->ajax()) {
-            return datatables()->of($booking)
+            $bookings = $this->loketBookingQuery()->get()->map(function ($booking) {
+                $services = $booking->bookingorder->map(function ($order) {
+                    $label = trim((string) $order->product_name);
 
-                ->addColumn('booking', function ($booking) {
-                    if ($booking->status_pembayaran == 'Sudah Bayar') {
-                        return '<table class="table table-bordered" width="100%" cellspacing="0">
-                                <tbody>
-                                    <tr>
-                                        <td style="width: 2%">No</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                        <a href="#" class="fw-medium text-nowrap">' . $booking->no_pol_kendaraan . '</a><br><a href="#" class="fw-medium text-nowrap">(' . $booking->status_kendaraan . ')</a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width: 2%">Nama</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                            <a href="#" class="fw-medium text-nowrap">' . $booking->name . '</a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width: 2%">Orderan</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                        Orderan Sudah di Bayar
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td style="width: 2%">Tanggal</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                            <a href="#" class="fw-medium text-nowrap">' . date('d-m-Y', strtotime($booking->tgl_booking)) . ' ' . date('H:i', strtotime($booking->waktu_booking)) .  '</a>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td style="width: 2%">Status</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                            <a href="#" class="fw-medium text-nowrap">' . $booking->status .  '</a>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-
-                                        <td colspan="3" style="width: 20%">
-                                        <div class="d-flex justify-content-center align-items-center"><button class="upload btn btn-sm btn-success w-20 me-1 mb-2" id=' . $booking->id . '>Upload</button></div>
-                                        </td>
-                                    </tr>
-
-                                </tbody>
-                            </table>
-                        </center>';
+                    if ($order->extraservice_name) {
+                        $label .= ' + ' . trim((string) $order->extraservice_name);
                     }
-                    return '<table class="table table-bordered" width="100%" cellspacing="0">
-                                <tbody>
-                                    <tr>
-                                        <td style="width: 2%">No</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                        <a href="#" class="fw-medium text-nowrap">' . $booking->no_pol_kendaraan . '</a><br><a href="#" class="fw-medium text-nowrap">(' . $booking->status_kendaraan . ')</a>
-                                        </td>
-                                    </tr>
-                                     <tr>
-                                        <td style="width: 2%">Nama</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                            <a href="#" class="fw-medium text-nowrap">' . $booking->name . '</a>
-                                        </td>
-                                    </tr>
 
-                                    <tr>
-                                        <td style="width: 2%">Tipe Mobil</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                            <a href="#" class="fw-medium text-nowrap">' . $booking->tipe_mobil . '</a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width: 2%">Orderan</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                        <button class="orderan btn btn-sm btn-warning w-20 me-1 mb-2" id=' . $booking->id . '>Orderan</button>
-                                        <a target="_blank" href='.route('cetak.qrcode', $booking->id).' class="btn btn-sm btn-dark w-20 me-1 mb-2">QR CODE</a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width: 2%">Status</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 20%">
-                                            <a href="#" class="fw-medium text-nowrap">' . $booking->status .  '</a>
-                                        </td>
-                                    </tr>
-                                    <tr>
+                    return $label;
+                })->filter()->values();
 
-                                        <td colspan="3" style="width: 20%">
-                                        <div class="d-flex justify-content-center align-items-center"><button class="edit btn btn-sm btn-warning w-20 me-1 mb-2" id=' . $booking->id . '>Edit</button><button class="upload btn btn-sm btn-success w-20 me-1 mb-2" id=' . $booking->id . '>Upload</button><button class="delete btn btn-sm btn-danger w-20 me-1 mb-2" id=' . $booking->id . '>Hapus</button></div>
-                                        </td>
-                                    </tr>
+                return [
+                    'id' => $booking->id,
+                    'no_pol_kendaraan' => $booking->no_pol_kendaraan,
+                    'tipe_mobil' => $booking->tipe_mobil ?: 'Tipe belum dipilih',
+                    'name' => $booking->name,
+                    'phone' => $booking->phone,
+                    'created_label' => $booking->created_at ? $booking->created_at->format('d M Y, H:i') : '-',
+                    'service_preview' => $services->take(2)->implode(', ') ?: 'Belum ada layanan',
+                    'service_summary' => $services->implode(', '),
+                    'service_count' => $services->count(),
+                    'service_more_count' => max($services->count() - 2, 0),
+                    'photo_count' => (int) $booking->photocek_count,
+                    'payment_status' => $booking->status_pembayaran ?: 'Belum Bayar',
+                    'vehicle_status' => $booking->status_kendaraan ?: '-',
+                    'booking_status' => $booking->status ?: 'Booking',
+                ];
+            })->values();
 
-                                </tbody>
-                            </table>
-                        </center>';
-                })
-
-                ->rawColumns(['booking'])
-                ->make(true);
+            return response()->json(['data' => $bookings]);
         }
-        return view('loket.dashoboard');
+
+        $statsQuery = $this->baseLoketQuery();
+        $stats = [
+            'active' => (clone $statsQuery)->count(),
+            'waiting' => (clone $statsQuery)->where('status_kendaraan', 'Ditunggu')->count(),
+            'dropoff' => (clone $statsQuery)->where('status_kendaraan', 'Ditinggal')->count(),
+            'unpaid' => (clone $statsQuery)
+                ->where(function ($query) {
+                    $query->whereNull('status_pembayaran')
+                        ->orWhere('status_pembayaran', '!=', 'Sudah Bayar');
+                })
+                ->count(),
+        ];
+
+        return view('loket.dashoboard', compact('stats'));
     }
 
     public function getProduk()
     {
         $produk = Product::orderBy('name', 'ASC')->get();
-
         return response()->json(['status' => 'sukses', 'data' => $produk]);
     }
 
     public function orderan($id)
     {
-        $booking = Booking::where('id', $id)->with('bookingorder')->first();
+        $booking = Booking::with('bookingorder')->find($id);
+        if (!$booking && request()->ajax()) {
+            return datatables()->of([])->make(true);
+        }
+
         if (request()->ajax()) {
             return datatables()->of($booking->bookingorder)
-                ->addColumn('bookingorder', function ($book) {
-                    if (Auth::user()->role->role == 'loket' || $book->booking->status_pembayaran != 'Sudah Bayar' || Auth::user()->role->role == 'kasir' || Auth::user()->role->role == 'Superadmin') {
-                        return '<table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 2%">Layanan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 20%">
-                                    <a href="#" class="fw-medium text-nowrap">' . $book->product_name . '</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 2%">Extra Layanan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 20%">
-                                    <a href="#" class="fw-medium text-nowrap">' . $book->extraservice_name . '</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 2%">Aksi</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 20%">
-                                        <button class="delete_layanan btn btn-sm btn-danger w-20 me-1 mb-2" id=' . $book->id . '>Hapus</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </center>';
-                    }
-
-                    return '<table class="table table-bordered" width="100%" cellspacing="0">
-                        <tbody>
-                            <tr>
-                                <td style="width: 2%">Layanan</td>
-                                <td style="width: 2%">:</td>
-                                <td style="width: 20%">
-                                <a href="#" class="fw-medium text-nowrap">' . $book->product_name . ' | ' . 'Rp. ' . number_format($book->product_price, 0, ',', '.') . '</a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 2%">Extra Layanan</td>
-                                <td style="width: 2%">:</td>
-                                <td style="width: 20%">
-                                <a href="#" class="fw-medium text-nowrap">' . $book->extraservice_name . ' | ' . 'Rp. ' . number_format($book->extraservice_price, 0, ',', '.') .  '</a>
-                                </td>
-                            </tr>
-
-                        </tbody>
-                    </table>
-                </center>';
+                ->addIndexColumn()
+                ->addColumn('bookingorder', function ($row) {
+                    $extra = $row->extraservice_name
+                        ? '<div class="service-item-card__extra">Extra: ' . e($row->extraservice_name) . ' (Rp ' . number_format($row->extraservice_price, 0, ',', '.') . ')</div>'
+                        : '<div class="service-item-card__extra service-item-card__extra--empty">Tanpa layanan tambahan</div>';
+                    
+                    return '
+                    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-3 p-3 p-sm-4 border border-light rounded-3 mb-2 bg-white shadow-sm">
+                        <div class="me-auto w-full">
+                            <div class="service-item-card__title">' . e($row->product_name) . '</div>
+                            <div class="service-item-card__price">Harga utama: Rp ' . number_format($row->product_price, 0, ',', '.') . '</div>
+                            ' . $extra . '
+                        </div>
+                        <div class="d-flex align-items-center justify-content-sm-end w-full w-sm-auto gap-2">
+                            <button class="delete_layanan btn btn-sm btn-outline-danger w-full w-sm-auto" id="' . $row->id . '">
+                                <i data-feather="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>';
                 })
-
                 ->rawColumns(['bookingorder'])
                 ->make(true);
         }
@@ -212,92 +139,94 @@ class LoketController extends Controller
     public function bookingorder(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'no_pol_kendaraan'  => 'required|string',
-            'name'              => 'required|string',
-            'tipe_mobil'        => 'nullable|string',
-            'phone'             => 'required|string',
-            'status_kendaraan'  => 'required|string'
+            'no_pol_kendaraan' => 'required|string',
+            'name'             => 'required|string',
+            'tipe_mobil'       => 'nullable|string',
+            'phone'            => 'required|string',
+            'status_kendaraan' => 'required|string'
         ], [
-            'no_pol_kendaraan.required' => 'Isi Kolom Nomor Pol. Kendaraan',
-            'name.required'             => 'Isi Kolom Nama',
-            'tipe_mobil.required'       => 'Isi Tipe & Warna Mobil',
-            'phone.required'            => 'Isi No. HP',
-            'status_kendaraan.required' => 'Pilih Status Kendaraan'
+            'no_pol_kendaraan.required' => 'Nomor Polisi wajib diisi',
+            'name.required'             => 'Nama Pelanggan wajib diisi',
+            'phone.required'            => 'Nomor HP wajib diisi',
+            'status_kendaraan.required' => 'Status Kendaraan wajib dipilih'
         ]);
-        if ($validator->passes()) {
-            $tipemobil = Tipemobil::find($request->tipe_mobil);
-            $booking = Booking::create([
-                'no_pol_kendaraan' => $this->plat($request->no_pol_kendaraan),
-                'name'             => ucwords($request->name),
-                'tipe_mobil'       => $tipemobil == null ? null : $tipemobil->name,
-                'phone'            => $request->phone,
-                'tgl_booking'      => date('Y-m-d'),
-                'waktu_booking'    => date('H:i'),
-                'description'      => 'Visit',
-                'status'           => 'Booking',
-                'tgl_proses'       => now(),
-                'photo_tipe_mobil' => $tipemobil == null ? null : $tipemobil->photo,
-                'status_kendaraan' => $request->status_kendaraan
-            ]);
 
-            return response()->json(['text' => 'Booking ' . $booking->no_pol_kendaraan . ' berhasil.']);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()->all()]);
         }
-        return response()->json(['error' => $validator->errors()->all()]);
-    }
 
-    private function plat($text)
-    {
-        $string = strtoupper(trim($text));
+        $tipemobil = Tipemobil::find($request->tipe_mobil);
+        $booking = Booking::create([
+            'no_pol_kendaraan' => $this->plat($request->no_pol_kendaraan),
+            'name'             => ucwords($request->name),
+            'tipe_mobil'       => $tipemobil ? $tipemobil->name : null,
+            'phone'            => $request->phone,
+            'tgl_booking'      => date('Y-m-d'),
+            'waktu_booking'    => date('H:i'),
+            'description'      => 'Visit',
+            'status'           => 'Booking',
+            'tgl_proses'       => now(),
+            'photo_tipe_mobil' => $tipemobil ? $tipemobil->photo : null,
+            'status_kendaraan' => $request->status_kendaraan
+        ]);
 
-        $pattern = '/^([A-Z]{1,3})(\s|-)*([1-9][0-9]{0,3})(\s|-)*([A-Z]{0,3}|[1-9][0-9]{1,2})$/i';
-        if (preg_match($pattern, $string)) {
-            return trim(strtoupper(preg_replace($pattern, '$1 $3 $5', $string)));
-        }
+        return response()->json(['status' => 'sukses', 'text' => 'Booking ' . $booking->no_pol_kendaraan . ' berhasil dibuat.']);
     }
 
     public function edit($id)
     {
-        $booking = Booking::where('id', $id)->with('bookingorder')->first();
-        return response()->json(['data' => $booking]);
+        $booking = Booking::with('bookingorder')->find($id);
+        if (!$booking) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
+        }
+        return response()->json(['status' => 'sukses', 'data' => $booking]);
     }
 
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'no_pol_kendaraan'  => 'required|string',
-            'name'              => 'required|string',
-            'tipe_mobil'        => 'required|string',
-            'phone'             => 'required|string',
-            'status_kendaraan'  => 'required|string'
+            'no_pol_kendaraan' => 'required|string',
+            'name'             => 'required|string',
+            'tipe_mobil'       => 'required|string',
+            'phone'            => 'required|string',
+            'status_kendaraan' => 'required|string'
         ], [
-            'no_pol_kendaraan.required' => 'Isi Kolom Nomor Pol. Kendaraan',
-            'name.required'             => 'Isi Kolom Nama',
-            'tipe_mobil.required'       => 'Isi Tipe & Warna Mobil',
-            'phone.required'            => 'Isi No. HP',
-            'status_kendaraan.required' => 'Pilih Status Kendaraan'
+            'no_pol_kendaraan.required' => 'Nomor Polisi wajib diisi',
+            'name.required'             => 'Nama Pelanggan wajib diisi',
+            'tipe_mobil.required'       => 'Tipe Mobil wajib dipilih',
+            'phone.required'            => 'Nomor HP wajib diisi',
+            'status_kendaraan.required' => 'Status Kendaraan wajib dipilih'
         ]);
 
-
-        if ($validator->passes()) {
-            $booking = Booking::find($id);
-            $tipemobil = Tipemobil::find($request->tipe_mobil);
-            $booking->update([
-                'no_pol_kendaraan' => $this->plat($request->no_pol_kendaraan),
-                'name'             => ucwords($request->name),
-                'tipe_mobil'       => $tipemobil->name,
-                'phone'            => $request->phone,
-                'status_kendaraan' => $request->status_kendaraan
-            ]);
-
-            return response()->json(['text' => 'Booking ' . $booking->no_pol_kendaraan . ' berhasil diubah.']);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()->all()]);
         }
-        return response()->json(['error' => $validator->errors()->all()]);
+
+        $booking = Booking::find($id);
+        if (!$booking) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
+        }
+
+        $tipemobil = Tipemobil::find($request->tipe_mobil);
+        $booking->update([
+            'no_pol_kendaraan' => $this->plat($request->no_pol_kendaraan),
+            'name'             => ucwords($request->name),
+            'tipe_mobil'       => $tipemobil ? $tipemobil->name : $booking->tipe_mobil,
+            'phone'            => $request->phone,
+            'status_kendaraan' => $request->status_kendaraan
+        ]);
+
+        return response()->json(['status' => 'sukses', 'text' => 'Booking ' . $booking->no_pol_kendaraan . ' berhasil diupdate.']);
     }
 
     public function destroy($id)
     {
         $booking = Booking::find($id);
-        if (Auth::user()->role->role != 'Superadmin') {
+        if (!$booking) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
+        }
+
+        if (strcasecmp(Auth::user()->role->role, 'Superadmin') !== 0) {
             if ($booking->status == 'Selesai') {
                 return response()->json(['status' => 'gagal', 'text' => 'Booking ' . $booking->no_pol_kendaraan . ' gagal dihapus status sudah Selesai']);
             }
@@ -327,31 +256,21 @@ class LoketController extends Controller
 
     public function pengerjaan($id)
     {
-        $booking = Booking::where('id', $id)->with('histori')->orderBy('created_at', 'DESC')->first();
+        $booking = Booking::with('histori')->find($id);
         if (request()->ajax()) {
-            return datatables()->of($booking->histori)
-                ->addColumn('histori', function ($book) {
-                    return '<table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 2%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 20%">
-                                    <a href="#" class="fw-medium text-nowrap">' . $book->histori . '</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 2%">Tanggal</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 20%">
-                                        ' . date('d-m-Y H:i', strtotime($book->created_at)) . ' WIB
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </center>';
+            return datatables()->of($booking->histori()->orderBy('created_at', 'DESC'))
+                ->addIndexColumn()
+                ->addColumn('histori', function ($row) {
+                    return '
+                    <div class="d-flex align-items-center p-3 border-start border-4 border-primary bg-light rounded-end mb-2 shadow-sm">
+                        <div class="me-auto">
+                            <div class="fw-bold text-dark">' . $row->histori . '</div>
+                            <div class="small text-secondary mt-1 d-flex align-items-center">
+                                <i data-feather="clock" class="w-3 h-3 me-1"></i> ' . $row->created_at->format('d M Y H:i') . ' WIB
+                            </div>
+                        </div>
+                    </div>';
                 })
-
                 ->rawColumns(['histori'])
                 ->make(true);
         }
@@ -360,90 +279,82 @@ class LoketController extends Controller
     public function delete_orderan($id)
     {
         $bookingorder = Bookingorder::find($id);
-        $transaksi = Transaksi::where('booking_id', $bookingorder->booking_id)->first();
-        if ($transaksi) {
-            $transaksi->update([
-                'total' => $transaksi->total - ($bookingorder->product_price + $bookingorder->extraservice_price)
-            ]);
+        if (!$bookingorder) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
         }
+
+        $booking_id = $bookingorder->booking_id;
         $bookingorder->delete();
 
-        return response()->json(['text' => 'Layanan berhasil dihapus.']);
+        $this->updateTransaksiTotal($booking_id);
+
+        return response()->json(['status' => 'sukses', 'text' => 'Layanan berhasil dihapus.']);
     }
 
     public function tambah_orderan(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'product'  => 'required|string',
+            'product' => 'required',
         ], [
-            'product.required' => 'Pilih Kolom Layanan',
+            'product.required' => 'Pilih Layanan',
         ]);
 
-        if ($validator->passes()) {
-            $product = Product::find($request->product);
-            if ($request->extraservice == null || !$request->extraservice) {
-                $bookingorder = Bookingorder::create([
-                    'booking_id' => $id,
-                    'product_name'  => $product->name,
-                    'product_price' => $product->price
-                ]);
-
-                $transaksi = Transaksi::where('booking_id', $id)->first();
-                if ($transaksi) {
-                    $transaksi->update([
-                        'total' => (Bookingorder::where('booking_id', $id)->sum('product_price') + Bookingorder::where('booking_id', $id)->sum('extraservice_price')) - $transaksi->discount
-                    ]);
-                } else {
-                    Transaksi::create([
-                        'booking_id'        => $id,
-                        'invoice'           => date('ymd') . time(),
-                        'total'             => Bookingorder::where('booking_id', $id)->sum('product_price') + Bookingorder::where('booking_id', $id)->sum('extraservice_price')
-                    ]);
-                }
-                return response()->json(['status' => 'sukses', 'text' => 'Tambah ' . $bookingorder->product_name . ' berhasil']);
-            }
-
-            $extraservice = Extraservice::find($request->extraservice);
-            $bookingorder = Bookingorder::create([
-                'booking_id' => $id,
-                'product_name'  => $product->name,
-                'product_price' => $product->price,
-                'extraservice_name' => $extraservice->name,
-                'extraservice_price' => $extraservice->price,
-            ]);
-
-            $transaksi = Transaksi::where('booking_id', $id)->first();
-            if ($transaksi) {
-                $transaksi->update([
-                    'total' => (Bookingorder::where('booking_id', $id)->sum('product_price') + Bookingorder::where('booking_id', $id)->sum('extraservice_price')) - $transaksi->discount
-                ]);
-            } else {
-                Transaksi::create([
-                    'booking_id'        => $id,
-                    'invoice'           => date('ymd') . time(),
-                    'total'             => Bookingorder::where('booking_id', $id)->sum('product_price') + Bookingorder::where('booking_id', $id)->sum('extraservice_price')
-                ]);
-            }
-            return response()->json(['status' => 'sukses', 'text' => 'Tambah ' . $bookingorder->product_name . ' berhasil']);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()->all()]);
         }
 
-        return response()->json(['error' => $validator->errors()->all()]);
+        $product = Product::find($request->product);
+        if (!$product) {
+            return response()->json(['status' => 'gagal', 'text' => 'Produk tidak ditemukan']);
+        }
+
+        $extraservice = $request->extraservice ? Extraservice::find($request->extraservice) : null;
+
+        $bookingorder = Bookingorder::create([
+            'booking_id'         => $id,
+            'product_name'       => $product->name,
+            'product_price'      => $product->price,
+            'extraservice_name'  => $extraservice ? $extraservice->name : null,
+            'extraservice_price' => $extraservice ? $extraservice->price : 0,
+        ]);
+
+        $this->updateTransaksiTotal($id);
+
+        return response()->json(['status' => 'sukses', 'text' => 'Tambah ' . $bookingorder->product_name . ' berhasil']);
+    }
+
+    private function updateTransaksiTotal($booking_id)
+    {
+        $total = Bookingorder::where('booking_id', $booking_id)->sum('product_price') + 
+                 Bookingorder::where('booking_id', $booking_id)->sum('extraservice_price');
+
+        $transaksi = Transaksi::where('booking_id', $booking_id)->first();
+        if ($transaksi) {
+            $transaksi->update([
+                'total' => $total - $transaksi->discount
+            ]);
+        } else {
+            Transaksi::create([
+                'booking_id' => $booking_id,
+                'invoice'    => date('ymd') . time(),
+                'total'      => $total
+            ]);
+        }
     }
 
     public function selesai()
     {
-        $booking = Booking::where('status', 'Selesai')->whereDay('created_at', date('d'))->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->get();
         if (request()->ajax()) {
+            $booking = Booking::with(['bookingorder:id,booking_id,product_name'])
+                ->where('status', 'Selesai')
+                ->whereDate('updated_at', now()->toDateString())
+                ->orderBy('updated_at', 'DESC');
+
             return datatables()->of($booking)
-                ->addColumn('orderan', function ($book) {
-                    $bookingorder = Bookingorder::where('booking_id', $book->id)->get();
-                    foreach ($bookingorder as $order) {
-                        $data[]  = $order->product_name;
-                    }
-
-                    return $data;
+                ->addIndexColumn()
+                ->addColumn('orderan', function ($row) {
+                    return $row->bookingorder->pluck('product_name')->implode(", ");
                 })
-
                 ->rawColumns(['orderan'])
                 ->make(true);
         }
@@ -451,31 +362,24 @@ class LoketController extends Controller
 
     public function serah_terima()
     {
-        $booking = Booking::orderBy('created_at', 'DESC')->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->get();
-
         if (request()->ajax()) {
+            $booking = Booking::with(['bookingorder:id,booking_id,product_name'])
+                ->orderBy('created_at', 'DESC')
+                ->whereMonth('created_at', date('m'))
+                ->whereYear('created_at', date('Y'));
+
             return datatables()->of($booking)
-                ->addColumn('orderan', function ($book) {
-                    $bookingorder = Bookingorder::where('booking_id', $book->id)->get();
-                    if ($bookingorder) {
-                        foreach ($bookingorder as $order) {
-                            if ($order->product_name) {
-                                $data[]  = $order->product_name;
-                            }else {
-                                $data[] = '-';
-                            }
-                            return $data;
-                        }
-
-                    }
+                ->addIndexColumn()
+                ->addColumn('orderan', function ($row) {
+                    return $row->bookingorder->pluck('product_name')->implode(", ") ?: '-';
                 })
-                ->addColumn('aksi', function ($booking) {
-
-                    $button = "<div class='d-flex justify-content-center align-items-center'><a target='_blank' href='" . route('form.cetak', $booking->id) . "' class='cetak btn btn-elevated-dark w-28 me-1 mb-2' id=" . $booking->id . ">Cetak Form</a></div>";
-
-                    return $button;
+                ->addColumn('aksi', function ($row) {
+                    return '<div class="flex justify-center items-center">
+                        <a target="_blank" href="' . route('form.cetak', $row->id) . '" class="btn btn-sm btn-dark">
+                            <i data-feather="printer" class="w-4 h-4 mr-1"></i> Cetak Form
+                        </a>
+                    </div>';
                 })
-
                 ->rawColumns(['orderan', 'aksi'])
                 ->make(true);
         }

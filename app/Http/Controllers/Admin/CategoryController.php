@@ -17,28 +17,24 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $category = Category::orderBy('created_at', 'DESC')->with('product')->get();
         if (request()->ajax()) {
-            return datatables()->of($category)
-            ->addColumn('aksi', function ($category) {
+            $query = Category::withCount('product')->orderBy('created_at', 'DESC');
 
-                $button = "<div class='d-flex justify-content-center align-items-center'>
-                <button class='edit btn btn-elevated-warning w-24 me-1 mb-2' id=".$category->id.">Edit</button>
-                <button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$category->id.">Hapus</button>
-                </div>";
-
-                return $button;
-            })
-            ->editColumn('name', function ($category){
-                $plat = '<a href="#" class="fw-medium text-nowrap">'.$category->name.'</a>';
-                return $plat;
-            })
-            ->addColumn('jumlah_product', function ($category){
-                $plat = '<a href="#" class="fw-medium text-nowrap">'.number_format($category->product->count(), 0, ',','.').'</a>';
-                return $plat;
-            })
-            ->rawColumns(['aksi', 'jumlah_product', 'name'])
-            ->make(true);
+            return datatables()->of($query)
+                ->addColumn('aksi', function ($category) {
+                    return '<div class="d-flex justify-content-center gap-1">
+                                <button class="edit btn btn-sm btn-primary w-20" id="' . $category->id . '">Edit</button>
+                                <button class="delete btn btn-sm btn-danger w-20" id="' . $category->id . '">Hapus</button>
+                            </div>';
+                })
+                ->editColumn('name', function ($category) {
+                    return '<div class="fw-bold text-theme-1">' . $category->name . '</div>';
+                })
+                ->editColumn('product_count', function ($category) {
+                    return '<div class="text-center fw-medium">' . number_format($category->product_count, 0, ',', '.') . ' Produk</div>';
+                })
+                ->rawColumns(['aksi', 'name', 'product_count'])
+                ->make(true);
         }
         return view('admin.category.index');
     }

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Bookingorder extends Model
 {
     use Uuids;
-    protected $fillable = ['booking_id', 'product_name', 'product_price', 'extraservice_name', 'extraservice_price'];
+    protected $fillable = ['booking_id', 'product_name', 'product_price', 'extraservice_name', 'extraservice_price', 'total', 'discount'];
 
     public function booking()
     {

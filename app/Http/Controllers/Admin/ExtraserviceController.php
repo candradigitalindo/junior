@@ -17,32 +17,24 @@ class ExtraserviceController extends Controller
      */
     public function index()
     {
-        $e_service = Extraservice::orderBy('created_at', 'DESC')->with('product')->get();
         if (request()->ajax()) {
+            $e_service = Extraservice::with('product')->select('extraservices.*');
             return datatables()->of($e_service)
-            ->addColumn('aksi', function ($e_service) {
-
-                $button = "<div class='d-flex justify-content-center align-items-center'>
-                <button class='edit btn btn-elevated-warning w-24 me-1 mb-2' id=".$e_service->id.">Edit</button>
-                <button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$e_service->id.">Hapus</button>
-                </div>";
-
-                return $button;
-            })
-            ->addColumn('name_product', function ($e_service){
-                $product = '<a href="#" class="fw-medium text-nowrap">'.$e_service->product->name.'</a>';
-                return $product;
-            })
-            ->editColumn('name', function ($e_service){
-                $service = '<a href="#" class="fw-medium text-nowrap">'.$e_service->name.'</a>';
-                return $service;
-            })
-            ->editColumn('price', function ($e_service){
-                $price = '<a href="#" class="fw-medium text-nowrap">'.number_format($e_service->price, 0, ',','.').'</a>';
-                return $price;
-            })
-            ->rawColumns(['aksi', 'name_product', 'name', 'price'])
-            ->make(true);
+                ->addIndexColumn()
+                ->addColumn('aksi', function ($row) {
+                    return '<div class="flex justify-center items-center">
+                        <button class="edit btn btn-sm btn-outline-primary w-16 mr-1 mb-2" id="'.$row->id.'">Edit</button>
+                        <button class="delete btn btn-sm btn-outline-danger w-16 mr-1 mb-2" id="'.$row->id.'">Hapus</button>
+                    </div>';
+                })
+                ->addColumn('product_name', function ($row) {
+                    return $row->product ? $row->product->name : '-';
+                })
+                ->editColumn('price', function ($row) {
+                    return 'Rp ' . number_format($row->price, 0, ',', '.');
+                })
+                ->rawColumns(['aksi'])
+                ->make(true);
         }
         return view('admin.extra-service.index');
     }
@@ -54,12 +46,20 @@ class ExtraserviceController extends Controller
      */
     public function create(Request $request)
     {
-        $product = Product::find($request->id);
-        if ($product) {
-            return response()->json(['status' => 'sukses', 'data' => Extraservice::where('product_id', $product->id)->orderBy('price', 'ASC')->get()]);
+        if ($request->has('id')) {
+            $product = Product::find($request->id);
+            if ($product) {
+                return response()->json([
+                    'status' => 'sukses',
+                    'data' => Extraservice::where('product_id', $product->id)->orderBy('price', 'ASC')->get()
+                ]);
+            }
+            return response()->json(['status' => 'gagal', 'text' => 'Produk tidak ditemukan']);
         }
 
-        return response()->json(['status' => 'gagal', 'text'=>'Extra Service tidak ditemukan']);
+        // Return all products for the dropdown
+        $products = Product::orderBy('name', 'ASC')->get();
+        return response()->json(['status' => 'sukses', 'data' => $products]);
     }
 
     /**
@@ -71,27 +71,28 @@ class ExtraserviceController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'product'  => 'required|integer',
-            'name'      => 'required|string',
-            'price'     => 'required|integer',
-            'description'=> 'nullable|string'
-        ],[
-            'product.required'     => 'Pilih Produk',
-            'name.required'         => 'Isi Kolom Nama Produk',
-            'price.required'        => 'Isi Kolom Harga Produk'
+            'product'     => 'required',
+            'name'        => 'required|string|max:255',
+            'price'       => 'required|numeric|min:0',
+            'description' => 'nullable|string'
+        ], [
+            'product.required' => 'Pilih Produk',
+            'name.required'    => 'Isi Kolom Nama Extra Service',
+            'price.required'   => 'Isi Kolom Harga'
         ]);
 
-        if ($validator->passes()) {
-            $extra = Extraservice::create([
-                'product_id'   => $request->product,
-                'name'          => ucwords($request->name),
-                'price'         => $request->price,
-                'description'   => $request->description
-            ]);
-
-            return response()->json(['text'=>'Extra Produk '.$extra->name.' berhasil ditambah.']);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()->all()]);
         }
-        return response()->json(['error'=>$validator->errors()->all()]);
+
+        $extra = Extraservice::create([
+            'product_id'  => $request->product,
+            'name'        => ucwords($request->name),
+            'price'       => $request->price,
+            'description' => $request->description
+        ]);
+
+        return response()->json(['status' => 'sukses', 'text' => 'Extra Produk ' . $extra->name . ' berhasil ditambah.']);
     }
 
     /**
@@ -104,10 +105,13 @@ class ExtraserviceController extends Controller
     {
         $product = Product::where('name', $id)->first();
         if ($product) {
-            return response()->json(['status' => 'sukses', 'data' => Extraservice::where('product_id', $product->id)->orderBy('price', 'ASC')->get()]);
+            return response()->json([
+                'status' => 'sukses', 
+                'data' => Extraservice::where('product_id', $product->id)->orderBy('price', 'ASC')->get()
+            ]);
         }
 
-        return response()->json(['status' => 'gagal', 'text'=>'Extra Service tidak ditemukan']);
+        return response()->json(['status' => 'gagal', 'text' => 'Extra Service tidak ditemukan']);
     }
 
     /**
@@ -118,7 +122,10 @@ class ExtraserviceController extends Controller
      */
     public function edit($id)
     {
-        $extra = Extraservice::find($id);
+        $extra = Extraservice::with('product')->find($id);
+        if (!$extra) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
+        }
         return response()->json(['status' => 'sukses', 'data' => $extra]);
     }
 
@@ -132,28 +139,33 @@ class ExtraserviceController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'product'  => 'required|integer',
-            'name'      => 'required|string',
-            'price'     => 'required|integer',
-            'description'=> 'nullable|string'
-        ],[
-            'product.required'     => 'Pilih Produk',
-            'name.required'         => 'Isi Kolom Nama Produk',
-            'price.required'        => 'Isi Kolom Harga Produk'
+            'product'     => 'required',
+            'name'        => 'required|string|max:255',
+            'price'       => 'required|numeric|min:0',
+            'description' => 'nullable|string'
+        ], [
+            'product.required' => 'Pilih Produk',
+            'name.required'    => 'Isi Kolom Nama Extra Service',
+            'price.required'   => 'Isi Kolom Harga'
         ]);
 
-        if ($validator->passes()) {
-            $extra = Extraservice::find($id);
-            $extra->update([
-                'product_id'   => $request->product,
-                'name'          => ucwords($request->name),
-                'price'         => $request->price,
-                'description'   => $request->description
-            ]);
-
-            return response()->json(['text'=>'Extra Produk '.$extra->name.' berhasil diubah.']);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()->all()]);
         }
-        return response()->json(['error'=>$validator->errors()->all()]);
+
+        $extra = Extraservice::find($id);
+        if (!$extra) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
+        }
+
+        $extra->update([
+            'product_id'  => $request->product,
+            'name'        => ucwords($request->name),
+            'price'       => $request->price,
+            'description' => $request->description
+        ]);
+
+        return response()->json(['status' => 'sukses', 'text' => 'Extra Produk ' . $extra->name . ' berhasil diubah.']);
     }
 
     /**
@@ -165,7 +177,11 @@ class ExtraserviceController extends Controller
     public function destroy($id)
     {
         $extra = Extraservice::find($id);
+        if (!$extra) {
+            return response()->json(['status' => 'gagal', 'text' => 'Data tidak ditemukan']);
+        }
+        $name = $extra->name;
         $extra->delete();
-        return response()->json(['text'=>'Extra produk '.$extra->name.' berhasil dihapus.']);
+        return response()->json(['status' => 'sukses', 'text' => 'Extra produk ' . $name . ' berhasil dihapus.']);
     }
 }

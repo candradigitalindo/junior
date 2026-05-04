@@ -2,6 +2,40 @@
 @section('title')
     Dashboard Loket
 @endsection
+@section('css')
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .select2-container--default .select2-selection--single {
+            border: 1px solid #d2d6dc;
+            border-radius: 0.375rem;
+            height: 38px;
+            display: flex;
+            align-items: center;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 38px;
+            padding-left: 12px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+        .modal-open .select2-container {
+            z-index: 1060;
+        }
+        @media (max-width: 768px) {
+            .select2-container--default .select2-selection--single {
+                height: 45px;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 45px;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__arrow {
+                height: 43px;
+            }
+        }
+    </style>
+@endsection
 @section('content')
     <div class="grid columns-12 gap-6">
         <div class="g-col-12 g-col-xxl-12">
@@ -295,12 +329,25 @@
 @section('js')
     <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
         crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.js"></script>
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
     <script>
+        function initSelect2() {
+            $('select:not(.dataTables_length select)').select2({
+                width: '100%',
+                dropdownParent: $('.modal.show').length ? $('.modal.show') : $(document.body)
+            });
+        }
+
         $(document).ready(function() {
-            isi_tabel()
+            isi_tabel();
+            initSelect2();
+        });
+
+        $('.modal').on('shown.bs.modal', function() {
+            initSelect2();
         });
 
         function isi_tabel() {
@@ -456,15 +503,47 @@
                         destroy: true,
                         ajax: url_a,
                         columns: [
-
                             {
                                 data: 'photo',
                                 name: 'photo'
                             }
-                        ]
+                        ],
+                        drawCallback: function() {
+                            if (typeof feather !== 'undefined') {
+                                feather.replace();
+                            }
+                        }
                     })
                 }
             })
+        })
+
+        $(document).on('click', '.delete_photo', function() {
+            let id = $(this).data('id');
+            swal({
+                title: "Apakah Anda Yakin ?",
+                text: "Foto akan dihapus permanen!",
+                icon: "warning",
+                buttons: true,
+                dangerMode: true,
+            })
+            .then((willDelete) => {
+                if (willDelete) {
+                    let url = "{{ route('photocek.delete', ':id') }}";
+                    url = url.replace(':id', id);
+                    $.ajax({
+                        url: url,
+                        type: 'DELETE',
+                        data: {
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: function(res) {
+                            swal(res.text, { icon: "success" });
+                            $('#tabel-photo').DataTable().ajax.reload();
+                        }
+                    })
+                }
+            });
         })
 
         $(document).on('click', '.orderan', function() {

@@ -34,7 +34,6 @@
 
 </head>
 <body id="bg">
-    <!--<div id="loading-area"></div>-->
 <div class="page-wraper">
     <!-- header -->
     <header class="site-header header mo-left header-style-1">
@@ -45,7 +44,7 @@
                     <div class="dlab-topbar-left"> </div>
                     <div class="dlab-topbar-right">
                         <ul class="social-bx list-inline float-end">
-                            <li><a class="fab fa-instagram" href="https://www.instagram.com/kilatpremiumwash/" target="blank"></a></li>
+                            <li><a class="fab fa-instagram" href="https://www.instagram.com/juniorwash/" target="blank"></a></li>
                         </ul>
                     </div>
                 </div>
@@ -132,10 +131,13 @@
                 <div class="row">
                     <div class="col-lg-3 col-md-6 col-sm-6 footer-col-4">
                         <div class="widget widget_about">
-                            <div class="logo-footer logo-white"><img src="{{ asset('office/dist/images/logo.png') }}" alt=""></div>
-                            <p><strong>KILAT</strong> Premium Car Wash – One Step Polish – Body Care – Treatment – Coating – Restoration</p>
+                            <div class="logo-footer logo-white">
+                                <h2 class="text-white fw-bold" style="letter-spacing: 2px;">JUNIOR <span class="text-primary">PREMIUM</span></h2>
+                                <p class="text-white-50" style="letter-spacing: 4px; font-size: 10px; margin-top: -10px;">AUTO CARE</p>
+                            </div>
+                            <p><strong>JUNIOR PREMIUM AUTO CARE</strong> – One Step Polish – Body Care – Treatment – Coating – Restoration</p>
                             <ul class="dlab-social-icon dez-border">
-                                <li><a class="fab fa-instagram" href="https://www.instagram.com/kilatpremiumwash/" target="blank"></a></li>
+                                <li><a class="fab fa-instagram" href="https://www.instagram.com/juniorwash/" target="blank"></a></li>
                             </ul>
                         </div>
                     </div>

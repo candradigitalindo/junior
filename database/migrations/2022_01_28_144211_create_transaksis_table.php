@@ -17,11 +17,11 @@ class CreateTransaksisTable extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('booking_id')->references('id')->on('bookings')->onDelete('CASCADE');
             $table->string('invoice');
-            $table->string('no_pol_kendaraan');
-            $table->string('tipe_mobil');
-            $table->string('product_name');
-            $table->bigInteger('product_price');
-            $table->string('metode_pembayaran');
+            $table->string('no_pol_kendaraan')->nullable();
+            $table->string('tipe_mobil')->nullable();
+            $table->string('product_name')->nullable();
+            $table->bigInteger('product_price')->nullable();
+            $table->string('metode_pembayaran')->nullable();
             $table->date('tgl_bayar')->nullable();
             $table->text('keterangan')->nullable();
             $table->bigInteger('total')->nullable();

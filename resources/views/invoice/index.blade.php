@@ -6,12 +6,13 @@
     <!-- BEGIN: Invoice -->
     <div class="intro-y box overflow-hidden mt-5">
         <div class="d-flex flex-column flex-lg-row pt-10 px-5 px-sm-20 pt-sm-20 pb-lg-20 text-center text-sm-start">
-            <div class="fw-semibold text-theme-1 dark-text-theme-10 fs-3xl"><img alt="logo Kilat Premium Wash"
-                    style="width: 100px" src="{{ asset('image/no_photo_tipe_mobil.png') }}"></div>
+            <div class="fw-bold text-theme-1 dark-text-theme-10 fs-3xl" style="letter-spacing: 2px;">
+                JUNIOR <span class="text-warning">PREMIUM</span>
+                <div class="fs-sm fw-medium text-secondary" style="letter-spacing: 4px; margin-top: -5px;">AUTO CARE</div>
+            </div>
             <div class="mt-20 mt-lg-0 ms-lg-auto text-lg-end">
-                <div class="fs-xl text-theme-1 dark-text-theme-10 fw-medium">JUNIOR PREMIUM WASH</div>
-                <div class="mt-1">WhatsApp 0821 XXXX XXXX</div>
-                <div class="mt-1">Alamat : -</div>
+                <div class="mt-1">WhatsApp 081367717172</div>
+                <div class="mt-1">Alamat : Jl. Perjuangan No.23</div>
                 <div class="mt-1">Kota Medan, Sumatera Utara.</div>
                 <div class="mt-1"></div>
             </div>
@@ -86,6 +87,12 @@
                 <div class="fs-base text-gray-600">Total Bayar</div>
                 <div class="fs-xl text-theme-1 dark-text-theme-10 fw-medium mt-2">Rp.
                     {{ number_format($invoice->total, 0, ',', '.') }}</div>
+            </div>
+        </div>
+    </div>
+    <!-- END: Invoice -->
+@endsection
+ }}</div>
             </div>
         </div>
     </div>

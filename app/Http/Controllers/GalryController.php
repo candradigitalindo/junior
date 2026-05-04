@@ -6,6 +6,7 @@ use App\Models\Galery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Validator;
+use Intervention\Image\Facades\Image;
 
 class GalryController extends Controller
 {
@@ -57,19 +58,34 @@ class GalryController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'galery'      => 'required|image|mimes:jpeg,png,jpg|dimensions:width=450,height=514'
+            'galery' => 'required|image|mimes:jpeg,png,jpg|max:10240'
         ],[
-            'galery.required'       => 'Isi Kolom Foto',
-            'galery.image'          => 'File harus berupa gambar',
-            'galery.mimes'          => 'File harus berupa jpeg,png,jpg',
-            'galery.dimensions'     => 'Ukuran Foto harus Lebar : 450px dan Tinggi : 514px'
+            'galery.required' => 'Isi Kolom Foto',
+            'galery.image'    => 'File harus berupa gambar',
+            'galery.mimes'    => 'File harus berupa jpeg,png,jpg',
+            'galery.max'      => 'Ukuran file maksimal 10MB'
         ]);
 
         if ($validator->passes()) {
-            $img = $request->file('galery');
-            $img->storeAs('public/galery', $img->hashName());
-            Galery::create(['galery' => $img->hashName()]);
-            return response()->json(['text'=>'Galery berhasil ditambah.']);
+            $file = $request->file('galery');
+            $fileName = $file->hashName();
+            
+            // Image Processing
+            $img = Image::make($file->path());
+            
+            // Auto fit to 450x514 (Crop and Resize)
+            $img->fit(450, 514);
+
+            // Ensure directory exists
+            if (!Storage::disk('public')->exists('galery')) {
+                Storage::disk('public')->makeDirectory('galery');
+            }
+
+            // Save optimized
+            $img->save(storage_path('app/public/galery/' . $fileName), 85);
+
+            Galery::create(['galery' => $fileName]);
+            return response()->json(['text'=>'Galery berhasil ditambah dengan optimasi ukuran.']);
         }
 
         return response()->json(['error'=>$validator->errors()->all()]);

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Member;
+use App\Traits\PlatHelper;
 use Illuminate\Http\Request;
 use Validator;
 
 class MemberController extends Controller
 {
+    use PlatHelper;
     /**
      * Display a listing of the resource.
      *
@@ -83,16 +85,6 @@ class MemberController extends Controller
             return response()->json(['text'=>'Member '.$member->name.' berhasil ditambah.']);
         }
         return response()->json(['error'=>$validator->errors()->all()]);
-    }
-
-    private function plat($text)
-    {
-        $string = strtoupper(trim($text));
-
-        $pattern = '/^([A-Z]{1,3})(\s|-)*([1-9][0-9]{0,3})(\s|-)*([A-Z]{0,3}|[1-9][0-9]{1,2})$/i';
-        if (preg_match($pattern, $string)) {
-            return trim(strtoupper(preg_replace($pattern, '$1 $3 $5', $string)));
-        }
     }
 
     /**

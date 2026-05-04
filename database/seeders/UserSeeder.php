@@ -16,33 +16,28 @@ class UserSeeder extends Seeder
      */
     public function run()
     {
-        $cek = User::first();
-        if ($cek) {
-            $cek->delete();
-            $cek->role->delete();
-            $user = User::create([
-                'name' => 'Superadmin',
-                // 'phone' => '0812345678',
-                'username'  => 'superadmin',
-                'password' => Hash::make('12345678')
-            ]);
+        $roles = [
+            'superadmin' => 'Superadmin',
+            'loket'      => 'Loket',
+            'kasir'      => 'Kasir',
+            'pengecekan' => 'Pengecekan',
+            'pengerjaan' => 'Pengerjaan',
+            'gudang'     => 'Gudang',
+        ];
 
-            Role::create([
-                'user_id' => $user->id,
-                'role'      => 'Superadmin'
-            ]);
+        foreach ($roles as $username => $roleName) {
+            $user = User::updateOrCreate(
+                ['username' => $username],
+                [
+                    'name' => $roleName,
+                    'password' => Hash::make('12345678')
+                ]
+            );
+
+            Role::updateOrCreate(
+                ['user_id' => $user->id],
+                ['role' => $roleName]
+            );
         }
-
-        $user = User::create([
-            'name' => 'Superadmin',
-            // 'phone' => '0812345678',
-            'username'  => 'superadmin',
-            'password' => Hash::make('12345678')
-        ]);
-
-        Role::create([
-            'user_id' => $user->id,
-            'role'      => 'Superadmin'
-        ]);
     }
 }

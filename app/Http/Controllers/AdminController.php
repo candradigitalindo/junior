@@ -16,382 +16,66 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
-    public function index()
-    {
-        $booking    = Booking::whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
-        $kunjungan  = Booking::where('status', 'Selesai')->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
-        $product    = Product::count();
-        $pengguna   = User::count();
-        $transaksi  = Transaksi::where('tgl_bayar', '!=', null)->orderBy('created_at', 'DESC')->get()->take(5);
-        $histori    = Histori::orderBy('created_at', 'DESC')->with('booking')->get()->take(5);
-        $booking_t  = Booking::orderBy('created_at', 'DESC')->get()->take(7);
-        $trx_now    = Transaksi::where('tgl_bayar', '!=', null)->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->sum('total');
-        $tahun      = Transaksi::where('tgl_bayar', '!=', null)->whereYear('created_at', date('Y'))->sum('total');
-
-        // Chart
-        $labels      = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-        for ($bulan = 1; $bulan < 13; $bulan++) {
-            $trx_bulan   = Transaksi::where('tgl_bayar', '!=', null)->whereMonth('created_at', $bulan)->whereYear('created_at', date('Y'))->sum('total');
-            $jumlah_trx_bln[] = $trx_bulan;
-        }
-        for ($bln = 01; $bln < 13; $bln++) {
-            $peng_bulan = Pengeluaran::whereMonth('created_at', $bln)->whereYear('created_at', date('Y'))->sum('jumlah');
-            $jumlah_peng_bln[] = $peng_bulan;
-        }
-        for ($bln = 01; $bln < 13; $bln++) {
-            $pem_bulan = Pemasukan::whereMonth('created_at', $bln)->whereYear('created_at', date('Y'))->sum('jumlah');
-            $jumlah_pem_bln[] = $pem_bulan;
-        }
-        $data = [
-            ['bulan' => "Januari", "pemasukan" => $jumlah_trx_bln[0], "pemasukan_lainnya" => $jumlah_pem_bln[0], "pengeluaran" => $jumlah_peng_bln[0]],
-            ['bulan' => "Februari", "pemasukan" => $jumlah_trx_bln[1], "pemasukan_lainnya" => $jumlah_pem_bln[1], "pengeluaran" => $jumlah_peng_bln[1]],
-            ['bulan' => "Maret", "pemasukan" => $jumlah_trx_bln[2], "pemasukan_lainnya" => $jumlah_pem_bln[2], "pengeluaran" => $jumlah_peng_bln[2]],
-            ['bulan' => "April", "pemasukan" => $jumlah_trx_bln[3], "pemasukan_lainnya" => $jumlah_pem_bln[3], "pengeluaran" => $jumlah_peng_bln[3]],
-            ['bulan' => "Mei", "pemasukan" => $jumlah_trx_bln[4], "pemasukan_lainnya" => $jumlah_pem_bln[4], "pengeluaran" => $jumlah_peng_bln[4]],
-            ['bulan' => "Juni", "pemasukan" => $jumlah_trx_bln[5], "pemasukan_lainnya" => $jumlah_pem_bln[5], "pengeluaran" => $jumlah_peng_bln[5]],
-            ['bulan' => "Juli", "pemasukan" => $jumlah_trx_bln[6], "pemasukan_lainnya" => $jumlah_pem_bln[6], "pengeluaran" => $jumlah_peng_bln[6]],
-            ['bulan' => "Agustus", "pemasukan" => $jumlah_trx_bln[7], "pemasukan_lainnya" => $jumlah_pem_bln[7], "pengeluaran" => $jumlah_peng_bln[7]],
-            ['bulan' => "September", "pemasukan" => $jumlah_trx_bln[8], "pemasukan_lainnya" => $jumlah_pem_bln[8], "pengeluaran" => $jumlah_peng_bln[8]],
-            ['bulan' => "Oktober", "pemasukan" => $jumlah_trx_bln[9], "pemasukan_lainnya" => $jumlah_pem_bln[9], "pengeluaran" => $jumlah_peng_bln[9]],
-            ['bulan' => "November", "pemasukan" => $jumlah_trx_bln[10], "pemasukan_lainnya" => $jumlah_pem_bln[10], "pengeluaran" => $jumlah_peng_bln[10]],
-            ['bulan' => "Desember", "pemasukan" => $jumlah_trx_bln[11], "pemasukan_lainnya" => $jumlah_pem_bln[11], "pengeluaran" => $jumlah_peng_bln[11]],
-        ];
-        // dd($data);
-
-        $tanggal = cal_days_in_month(CAL_GREGORIAN, date('m'), date('Y'));
-
-        for ($i = 1; $i < $tanggal + 1; $i++) {
-            $trx_tanggal   = Transaksi::where('tgl_bayar', '!=', null)->whereDay('updated_at', $i)->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->sum('total');
-            $peng_tgl = Pengeluaran::whereDay('created_at', $i)->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->sum('jumlah');
-            $pem_tgl = Pemasukan::whereDay('created_at', $i)->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->sum('jumlah');
-            $date[] = ['tanggal' => $i, 'trx_tanggal' => $trx_tanggal, 'pengeluaran' => $peng_tgl, 'pemasukan' => $pem_tgl];
-        }
-        return view('dashboard', compact('booking', 'kunjungan', 'product', 'pengguna', 'transaksi', 'histori', 'booking_t', 'trx_now', 'tahun', 'labels', 'jumlah_trx_bln', 'data', 'date'));
-    }
-
     public function trx_tanggal($tanggal)
     {
-        $trx_tanggal   = Transaksi::where('tgl_bayar', '!=', null)->whereDay('updated_at', $tanggal)->whereMonth('updated_at', date('m'))->whereYear('updated_at', date('Y'))->get();
-        if (strlen($trx_tanggal) < 4) {
-            $bookingorder = [];
-        }
+        $trx_tanggal = Transaksi::whereNotNull('tgl_bayar')
+            ->whereDay('updated_at', $tanggal)
+            ->whereMonth('updated_at', date('m'))
+            ->whereYear('updated_at', date('Y'))
+            ->get();
+
+        $bookingorder = [];
         foreach ($trx_tanggal as $key) {
             $bookingorder[] = Bookingorder::where('booking_id', $key->booking_id)->get();
-            // foreach ($bookingorder as $order) {
-            //     $data[]  = $order->product_name;
-            // }
         }
-        // dd($bookingorder);
+
         return view('admin.trx-tanggal', compact('trx_tanggal', 'tanggal', 'bookingorder'));
     }
 
     public function booking()
     {
-        $booking = Booking::orderBy('created_at', 'DESC')->get();
         if (request()->ajax()) {
-            return datatables()->of($booking)
-                ->addColumn('aksi', function ($booking) {
-                    if (Auth::user()->role == 'Superadmin') {
-                        # code...
-                        $button = "<div class='d-flex justify-content-center align-items-center'><button class='delete btn btn-sm btn-danger w-20 me-1 mb-2' id=" . $booking->id . ">Hapus</button></div></div>";
+            // Optimization: Eager load all relations and select only needed columns
+            $query = Booking::with(['bookingorder', 'photocek', 'histori', 'transaksi'])
+                ->orderBy('created_at', 'DESC');
 
-                        return $button;
+            return datatables()->of($query)
+                ->addColumn('aksi', function ($booking) {
+                    if (Auth::user()->role->role == 'Superadmin') {
+                        return '<div class="d-flex justify-content-center">
+                                    <button class="delete btn btn-sm btn-danger w-20" id="' . $booking->id . '">Hapus</button>
+                                </div>';
                     }
                 })
                 ->editColumn('no_pol_kendaraan', function ($booking) {
-                    $plat = '<a href="#" class="fw-medium text-nowrap">' . $booking->no_pol_kendaraan . ' / ' . $booking->name . '</a>';
-                    return $plat;
+                    return '<div class="fw-bold">' . $booking->no_pol_kendaraan . '</div><div class="text-gray-500 small">' . $booking->name . '</div>';
                 })
                 ->editColumn('tgl_booking', function ($booking) {
-                    if ($booking->tgl_proses == null && $booking->tgl_selesai == null) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Booking</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . date('d-m-Y', strtotime($booking->tgl_booking)) . ' ' . date('H:i', strtotime($booking->waktu_booking)) . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Diproses</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Selesai</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    } elseif ($booking->tgl_proses && $booking->tgl_selesai == null) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Booking</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . date('d-m-Y', strtotime($booking->tgl_booking)) . ' ' . date('H:i', strtotime($booking->waktu_booking)) . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                        <td style="width: 20%">Diproses</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 50%">
-                                        ' . date('d-m-Y H:i', strtotime($booking->tgl_proses)) . '
-                                        </td>
-                                    </tr>
-                                <tr>
-                                    <td style="width: 20%">Selesai</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    }
-
-                    return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Booking</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . date('d-m-Y', strtotime($booking->tgl_booking)) . ' ' . date('H:i', strtotime($booking->waktu_booking)) . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                        <td style="width: 20%">Diproses</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 50%">
-                                        ' . date('d-m-Y H:i', strtotime($booking->tgl_proses)) . '
-                                        </td>
-                                    </tr>
-                                <tr>
-                                    <td style="width: 20%">Selesai</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    ' . date('d-m-Y H:i', strtotime($booking->tgl_selesai)) . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
+                    $html = '<div class="text-xs">';
+                    $html .= '<div><strong>Booking:</strong> ' . date('d-m-Y H:i', strtotime($booking->tgl_booking . ' ' . $booking->waktu_booking)) . '</div>';
+                    if ($booking->tgl_proses) $html .= '<div><strong>Proses:</strong> ' . date('d-m-Y H:i', strtotime($booking->tgl_proses)) . '</div>';
+                    if ($booking->tgl_selesai) $html .= '<div><strong>Selesai:</strong> ' . date('d-m-Y H:i', strtotime($booking->tgl_selesai)) . '</div>';
+                    $html .= '</div>';
+                    return $html;
                 })
                 ->editColumn('description', function ($booking) {
-                    if ($booking->bookingorder) {
-                        if ($booking->status_pembayaran == 'Sudah Bayar') {
-                            return '<center>
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                                <tbody>
-                                    <tr>
-                                        <td style="width: 20%">Orderan</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 50%">
-                                            <button class="orderan btn btn-sm btn-warning w-20 me-1 mb-2" id=' . $booking->id . '>Orderan</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width: 20%">Layanan</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 50%">
-                                            ' . $booking->description . '
-                                        </td>
-                                    </tr>
-
-                                </tbody>
-                            </table>
-                        </center>';
-                        }
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Orderan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    <button class="orderan btn btn-sm btn-warning w-20 me-1 mb-2" id=' . $booking->id . '>Orderan</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Layanan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->description . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    }
-
-                    return '<center>
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                        <tbody>
-                            <tr>
-                                <td style="width: 20%">Orderan</td>
-                                <td style="width: 2%">:</td>
-                                <td style="width: 50%">
-                                <button class="orderan btn btn-sm btn-warning w-20 me-1 mb-2" id=' . $booking->id . '>Orderan</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 20%">Layanan</td>
-                                <td style="width: 2%">:</td>
-                                <td style="width: 50%">
-                                    ' . $booking->description . '
-                                </td>
-                            </tr>
-
-                        </tbody>
-                    </table>
-                </center>';
+                    $btn = '<button class="orderan btn btn-xs btn-warning mb-1" id="' . $booking->id . '">Orderan Details</button>';
+                    return '<div>' . $btn . '</div><div class="text-xs text-gray-600">' . $booking->description . '</div>';
                 })
                 ->editColumn('status', function ($booking) {
-                    if ($booking->photocek && $booking->histori && $booking->status == 'Selesai') {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    <div class="d-flex justify-content-center align-items-center"><button class="upload btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Foto</button><button class="pengerjaan btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Pekerjaan</button></div>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    } elseif ($booking->photocek && $booking->histori) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    <div class="d-flex justify-content-center align-items-center"><button class="upload btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Foto</button><button class="pengerjaan btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Pekerjaan</button></div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    } elseif ($booking->photocek) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    <td>
-                                    <div class="d-flex justify-content-center align-items-center"><button class="upload btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Foto</button></div>
-
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    } else {
-                        # code...
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    }
+                    $status = '<span class="badge bg-primary/10 text-primary rounded-pill px-2 py-1 mb-1">' . $booking->status . '</span>';
+                    $payStatus = '<br><span class="badge bg-' . ($booking->status_pembayaran == 'Sudah Bayar' ? 'success' : 'warning') . '/10 text-' . ($booking->status_pembayaran == 'Sudah Bayar' ? 'success' : 'warning') . ' rounded-pill px-2 py-1">' . ($booking->status_pembayaran ?: 'Belum Bayar') . '</span>';
+                    
+                    $actions = '<div class="mt-2 d-flex gap-1">';
+                    if ($booking->photocek->count() > 0) $actions .= '<button class="upload btn btn-xs btn-outline-secondary" id="' . $booking->id . '">Photos</button>';
+                    if ($booking->histori->count() > 0) $actions .= '<button class="pengerjaan btn btn-xs btn-outline-secondary" id="' . $booking->id . '">Logs</button>';
+                    $actions .= '</div>';
+                    
+                    return $status . $payStatus . $actions;
                 })
                 ->editColumn('tipe_mobil', function ($booking) {
-                    if ($booking->photo_tipe_mobil == null || $booking->photo_tipe_mobil == '') {
-                        $tipe = '<center><img src="' . asset('image/no_photo_tipe_mobil.png') . '"  style="width: 150px; height: 100px; padding: 0px; box-sizing: border-box; "></div></center><br><center><h3>' . $booking->tipe_mobil . '</h3></center>';
-                        return $tipe;
-                    }
-                    $tipe = '<center><img src="' . asset('storage/tipemobil/' . $booking->photo_tipe_mobil) . '" style="width: 200px" style="height: 200px"/></center><br><center><h3>' . $booking->tipe_mobil . '</h3></center>';
-                    return $tipe;
+                    $img = $booking->photo_tipe_mobil ? asset('storage/tipemobil/' . $booking->photo_tipe_mobil) : asset('image/no_photo_tipe_mobil.png');
+                    return '<center><img src="' . $img . '" style="width: 80px; border-radius: 8px;"/><div class="mt-1 small fw-medium">' . $booking->tipe_mobil . '</div></center>';
                 })
                 ->rawColumns(['aksi', 'no_pol_kendaraan', 'tgl_booking', 'description', 'status', 'tipe_mobil'])
                 ->make(true);
@@ -401,455 +85,93 @@ class AdminController extends Controller
 
     public function transaksi()
     {
-        $booking = Booking::where('status_pembayaran', 'Sudah Bayar')->orderBy('created_at', 'ASC')->get();
-        $transaksi = Transaksi::where('tgl_bayar', '!=', null)->sum('total');
         if (request()->ajax()) {
-            return datatables()->of($booking)
-                ->addColumn('aksi', function ($booking) {
-                    if ($booking->status_pembayaran == 'Sudah Bayar' && Auth::user()->role->role == 'Superadmin') {
-                        # code...
-                        $button = "<div class='d-flex justify-content-center align-items-center'><button type='button' class='reset btn btn-elevated-dark w-28 me-1 mb-2' id=" . $booking->id . ">Reset Transaksi</a></div>";
+            $query = Booking::where('status_pembayaran', 'Sudah Bayar')
+                ->with(['transaksi', 'bookingorder'])
+                ->orderBy('created_at', 'DESC');
 
-                        return $button;
+            return datatables()->of($query)
+                ->addColumn('aksi', function ($booking) {
+                    if (Auth::user()->role->role == 'Superadmin') {
+                        return '<button type="button" class="reset btn btn-sm btn-dark w-full" id="' . $booking->id . '">Reset Transaksi</button>';
                     }
                 })
                 ->editColumn('no_pol_kendaraan', function ($booking) {
-                    return '<center>
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                        <tbody>
-                            <tr>
-                                <td style="width: 20%">No. Pol Kendaraan</td>
-                                <td style="width: 2%">:</td>
-                                <td style="width: 50%">
-                                    ' . $booking->no_pol_kendaraan . '<br>
-                                    ' . $booking->name . '
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 20%">Tipe Mobil & Warna</td>
-                                <td style="width: 2%">:</td>
-                                <td style="width: 50%">
-                                    ' . $booking->tipe_mobil . '
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 20%">No. HP</td>
-                                <td style="width: 2%">:</td>
-                                <td style="width: 50%">
-                                    ' . $booking->phone . '
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </center>';
+                    return '<div><strong>' . $booking->no_pol_kendaraan . '</strong></div><div class="text-xs">' . $booking->tipe_mobil . '</div><div class="text-xs text-gray-500">' . $booking->phone . '</div>';
                 })
                 ->editColumn('tgl_booking', function ($booking) {
-                    if ($booking->tgl_proses == null && $booking->tgl_selesai == null) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Booking</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . date('d-m-Y', strtotime($booking->tgl_booking)) . ' ' . date('H:i', strtotime($booking->waktu_booking)) . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Diproses</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Selesai</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    } elseif ($booking->tgl_proses && $booking->tgl_selesai == null) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Booking</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . date('d-m-Y', strtotime($booking->tgl_booking)) . ' ' . date('H:i', strtotime($booking->waktu_booking)) . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                        <td style="width: 20%">Diproses</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 50%">
-                                        ' . date('d-m-Y H:i', strtotime($booking->tgl_proses)) . '
-                                        </td>
-                                    </tr>
-                                <tr>
-                                    <td style="width: 20%">Selesai</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    }
-
-                    return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Booking</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . date('d-m-Y', strtotime($booking->tgl_booking)) . ' ' . date('H:i', strtotime($booking->waktu_booking)) . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                        <td style="width: 20%">Diproses</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 50%">
-                                        ' . date('d-m-Y H:i', strtotime($booking->tgl_proses)) . '
-                                        </td>
-                                    </tr>
-                                <tr>
-                                    <td style="width: 20%">Selesai</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    ' . date('d-m-Y H:i', strtotime($booking->tgl_selesai)) . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
+                    return '<div class="text-xs">
+                                <div><strong>Book:</strong> ' . date('d-m-Y', strtotime($booking->tgl_booking)) . '</div>
+                                <div><strong>Done:</strong> ' . ($booking->tgl_selesai ? date('d-m-Y H:i', strtotime($booking->tgl_selesai)) : '-') . '</div>
+                            </div>';
                 })
                 ->editColumn('description', function ($booking) {
-                    $bookingorder = Bookingorder::where('booking_id', $booking->id)->get();
-                    foreach ($bookingorder as $order) {
-                        $data[]  = $order->product_name;
-                    }
-                    return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Orderan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    ' . implode(", ", $data) . '
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="width: 20%">Total</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    ' . number_format($booking->transaksi->total, 0, ',', '.') . ' | Diskon : ' . number_format($booking->transaksi->discount, 0, ',', '.') . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </center>';
+                    $items = $booking->bookingorder->pluck('product_name')->implode(', ');
+                    $total = number_format($booking->transaksi->total ?? 0, 0, ',', '.');
+                    $disc = number_format($booking->transaksi->discount ?? 0, 0, ',', '.');
+                    return '<div class="text-xs">
+                                <div class="mb-1"><strong>Items:</strong> ' . $items . '</div>
+                                <div class="text-success fw-bold">Total: Rp ' . $total . '</div>
+                                <div class="text-gray-500">Disc: Rp ' . $disc . '</div>
+                            </div>';
                 })
                 ->editColumn('status', function ($booking) {
-                    if ($booking->cekmasuk && $booking->histori && $booking->cekkeluar) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    <div class="d-flex justify-content-center align-items-center"><button class="cekmasuk btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Cek Masuk</button><button class="pengerjaan btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Pekerjaan</button><button class="cekkeluar btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Cek Keluar</button></div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </center>';
-                    } elseif ($booking->photocek && $booking->histori) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                        <div class="d-flex justify-content-center align-items-center"><button class="cekmasuk btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Cek Masuk</button><button class="pengerjaan btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Pekerjaan</button></div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </center>';
-                    } elseif ($booking->cekmasuk) {
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    <td>
-                                    <div class="d-flex justify-content-center align-items-center"><button class="cekmasuk btn btn-sm btn-warning w-24 me-1 mb-2" id=' . $booking->id . '>Cek Masuk</button></div>
-
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Status Bayar</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status_pembayaran . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    } else {
-                        # code...
-                        return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Status</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                        ' . $booking->status . '
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 20%">Pengecekan</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-
-                                    </td>
-                                    <tr>
-                                        <td style="width: 20%">Status Bayar</td>
-                                        <td style="width: 2%">:</td>
-                                        <td style="width: 50%">
-                                            ' . $booking->status_pembayaran . '
-                                        </td>
-                                    </tr>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
-                    }
+                    return '<span class="badge bg-success/10 text-success rounded-pill">' . $booking->status_pembayaran . '</span>';
                 })
                 ->addColumn('transaksi', function ($booking) {
-                    if ($booking->transaksi) {
-                        if ($booking->transaksi->tgl_bayar == null) {
-                            return '<center>
-                                    <table class="table table-bordered" width="100%" cellspacing="0">
-                                            <tbody>
-                                                <tr>
-                                                    <td style="width: 20%">Invoice</td>
-                                                    <td style="width: 2%">:</td>
-                                                    <td style="width: 50%">
-                                                        ' . $booking->transaksi->invoice . '
-                                                    </td>
-                                                </tr>
-
-                                            </tbody>
-                                        </table>
-                                    </center>';
-                        }
-
-                        if ($booking->transaksi->keterangan == null) {
-
-                            return '<center>
-                                <table class="table table-bordered" width="100%" cellspacing="0">
-                                        <tbody>
-                                            <tr>
-                                                <td style="width: 20%">Invoice</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    ' . $booking->transaksi->invoice . '
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="width: 20%">Metode Bayar</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    ' . $booking->transaksi->metode_pembayaran . '
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="width: 20%">Bukti Bayar</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    Tidak Ada Bukti Foto
-                                                </td>
-                                            </tr>
-
-                                            <tr>
-                                                <td style="width: 20%">Tgl Bayar</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    ' . date('d-m-Y H:i', strtotime($booking->transaksi->tgl_bayar)) . '
-                                                </td>
-                                            </tr>
-
-                                        </tbody>
-                                    </table>
-                                </center>';
-                        }
-
-                        return '<center>
-                                <table class="table table-bordered" width="100%" cellspacing="0">
-                                        <tbody>
-                                            <tr>
-                                                <td style="width: 20%">Invoice</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    ' . $booking->transaksi->invoice . '
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="width: 20%">Metode Bayar</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    ' . $booking->transaksi->metode_pembayaran . '
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="width: 20%">Bukti Bayar</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    <img src="' . asset('storage/bukti-pembayaran/' . $booking->transaksi->keterangan) . '" style="width: 50px" style="height: 50px"/>
-                                                </td>
-                                            </tr>
-
-                                            <tr>
-                                                <td style="width: 20%">Tgl Bayar</td>
-                                                <td style="width: 2%">:</td>
-                                                <td style="width: 50%">
-                                                    ' . date('d-m-Y H:i', strtotime($booking->transaksi->tgl_bayar)) . '
-                                                </td>
-                                            </tr>
-
-                                        </tbody>
-                                    </table>
-                                </center>';
+                    if (!$booking->transaksi) return '-';
+                    $html = '<div class="text-xs">';
+                    $html .= '<div><strong>Inv:</strong> ' . $booking->transaksi->invoice . '</div>';
+                    $html .= '<div><strong>Metode:</strong> ' . $booking->transaksi->metode_pembayaran . '</div>';
+                    if ($booking->transaksi->keterangan) {
+                        $html .= '<div class="mt-1"><img src="' . asset('storage/bukti-pembayaran/' . $booking->transaksi->keterangan) . '" style="width: 40px; border-radius: 4px;"/></div>';
                     }
-
-                    return '<center>
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                            <tbody>
-                                <tr>
-                                    <td style="width: 20%">Invoice</td>
-                                    <td style="width: 2%">:</td>
-                                    <td style="width: 50%">
-                                    ' . $booking->transaksi->invoice . '
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </center>';
+                    $html .= '</div>';
+                    return $html;
                 })
                 ->rawColumns(['aksi', 'no_pol_kendaraan', 'tgl_booking', 'description', 'status', 'transaksi'])
                 ->make(true);
         }
-        return view('admin.transaksi', compact('transaksi'));
+        return view('admin.transaksi');
     }
 
     public function reset_transaksi($id)
     {
-        $booking =  Booking::find($id);
-        $booking->update(['status_pembayaran' => 'Belum Bayar']);
-        Storage::disk('local')->delete('public/bukti-pembayaran/' . $booking->transaksi->keterangan);
-        $booking->transaksi->update([
-            'metode_pembayaran' => null,
-            'tgl_bayar'         => null,
-            'keterangan'        => null
-        ]);
+        $booking = Booking::with('transaksi')->find($id);
+        if ($booking) {
+            $booking->update(['status_pembayaran' => 'Belum Bayar']);
+            if ($booking->transaksi && $booking->transaksi->keterangan) {
+                Storage::disk('local')->delete('public/bukti-pembayaran/' . $booking->transaksi->keterangan);
+            }
+            $booking->transaksi->update([
+                'metode_pembayaran' => null,
+                'tgl_bayar'         => null,
+                'keterangan'        => null
+            ]);
+        }
 
         return response()->json(['status' => 'sukses', 'text' => 'Transaksi ' . $booking->no_pol_kendaraan . ' berhasil direset!']);
     }
 
     public function histori()
     {
-        $booking = Booking::orderBy('created_at', 'DESC')->get();
         if (request()->ajax()) {
-            return datatables()->of($booking)
+            $query = Booking::with('histori')->orderBy('created_at', 'DESC');
+
+            return datatables()->of($query)
                 ->editColumn('no_pol_kendaraan', function ($booking) {
-                    $plat = '<a href="#" class="fw-medium text-nowrap">' . $booking->no_pol_kendaraan . '</a>';
-                    return $plat;
+                    return '<div class="fw-bold text-theme-1">' . $booking->no_pol_kendaraan . '</div><div class="text-xs">' . $booking->tipe_mobil . '</div>';
                 })
                 ->editColumn('pengerjaan', function ($booking) {
-                    if (strlen($booking->histori) < 4) {
-                        return "Belum Ada Pengerjaan";
-                    }
-                    foreach ($booking->histori as $key) {
-                        $data[] = $key->histori . '<br>';
-                    }
-
-                    return implode("<br />", $data);
+                    if ($booking->histori->isEmpty()) return '<span class="text-gray-400 italic">No activity logs</span>';
+                    return '<div class="text-xs">' . $booking->histori->pluck('histori')->map(function($h) {
+                        return '• ' . $h;
+                    })->implode('<br>') . '</div>';
                 })
                 ->addColumn('tanggal', function ($booking) {
-                    $tgl = date('d-m-Y H:i', strtotime($booking->updated_at)) . ' WIB';
-                    return $tgl;
+                    return '<div class="text-xs">' . $booking->updated_at->format('d-m-Y H:i') . ' WIB</div>';
                 })
-                ->addColumn('tipe_mobil', function ($booking) {
-                    $mobil = $booking->tipe_mobil;
-                    return $mobil;
-                })
-
-                ->rawColumns(['tanggal', 'no_pol_kendaraan', 'tipe_mobil', 'pengerjaan'])
+                ->rawColumns(['no_pol_kendaraan', 'pengerjaan', 'tanggal'])
                 ->make(true);
         }
         return view('admin.histori');
@@ -857,33 +179,28 @@ class AdminController extends Controller
 
     public function pengeluaran_tahunan()
     {
-        $pengeluaran = Pengeluaran::orderBy('created_at', 'DESC')->whereYear('created_at', date('Y'))->get();
         if (request()->ajax()) {
-            return datatables()->of($pengeluaran)
-                ->addColumn('aksi', function ($pengeluaran) {
-
-                    $button = "<div class='d-flex justify-content-center align-items-center'>
-                <button class='edit btn btn-elevated-warning w-24 me-1 mb-2' id=" . $pengeluaran->id . ">Edit</button>
-                <button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=" . $pengeluaran->id . ">Hapus</button>
-                </div>";
-
-                    return $button;
+            $query = Pengeluaran::whereYear('created_at', date('Y'))->orderBy('created_at', 'DESC');
+            
+            return datatables()->of($query)
+                ->addColumn('aksi', function ($p) {
+                    return '<div class="d-flex gap-1">
+                                <button class="edit btn btn-xs btn-warning" id="' . $p->id . '">Edit</button>
+                                <button class="delete btn btn-xs btn-danger" id="' . $p->id . '">Hapus</button>
+                            </div>';
                 })
-                ->editColumn('name', function ($pengeluaran) {
-                    $name = '<a href="#" class="fw-medium text-nowrap">' . $pengeluaran->name . '</a>';
-                    return $name;
+                ->editColumn('name', function ($p) {
+                    return '<div class="fw-medium">' . $p->name . '</div>';
                 })
-                ->editColumn('jumlah', function ($pengeluaran) {
-                    $jumlah = '<a href="#" class="fw-medium text-nowrap">' . number_format($pengeluaran->jumlah, 0, ',', '.') . '</a>';
-                    return $jumlah;
+                ->editColumn('jumlah', function ($p) {
+                    return '<div class="fw-bold text-danger">Rp ' . number_format($p->jumlah, 0, ',', '.') . '</div>';
                 })
-                ->editColumn('created_at', function ($pengeluaran) {
-                    $tgl = '<a href="#" class="fw-medium text-nowrap">' . date('d M Y H:i', strtotime($pengeluaran->created_at)) . '</a>';
-                    return $tgl;
+                ->editColumn('created_at', function ($p) {
+                    return '<div class="text-xs">' . $p->created_at->format('d M Y H:i') . '</div>';
                 })
-                ->editColumn('foto', function ($pengeluaran) {
-                    $foto = '<img src="' . asset('storage/bukti-pengeluaran/' . $pengeluaran->foto) . '" style="width: 100px" style="height: 100px"/>';
-                    return $foto;
+                ->editColumn('foto', function ($p) {
+                    if (!$p->foto) return '-';
+                    return '<img src="' . asset('storage/bukti-pengeluaran/' . $p->foto) . '" style="width: 60px; border-radius: 4px; cursor: pointer;" onclick="window.open(this.src)"/>';
                 })
                 ->rawColumns(['aksi', 'jumlah', 'name', 'created_at', 'foto'])
                 ->make(true);

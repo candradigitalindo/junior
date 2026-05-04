@@ -9,139 +9,81 @@ use Validator;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use PDF;
-
-use function PHPUnit\Framework\isEmpty;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class GudangController extends Controller
 {
     public function index(Request $request)
     {
         if (request()->ajax()) {
+            $query = Barang::query();
+
+            // Optimization: Use withCount to avoid N+1 queries for history counts
             if (!empty($request->start_date)) {
-                $barang = Barang::orderBy('name', 'ASC')->with(['historibarang'])->get();
-
-                return datatables()->of($barang)
-                    ->addColumn('aksi', function ($barang) {
-                        return "<div class='d-flex justify-content-center align-items-center'><a target='_blank' href='" . route('gudang.histori', $barang->id) . "' class='btn btn-elevated-dark w-28 me-1 mb-2' id=" . $barang->id . ">Histori</a><button class='edit btn btn-elevated-primary w-24 me-1 mb-2' id=".$barang->id.">Edit</button><button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$barang->id.">Hapus</button></div>";
-                    })
-                    ->addColumn('jml_barang_masuk', function ($barang) use ($request) {
-                        $jumlah = Historibarang::where('barang_id', $barang->id)->where('status', 1)->whereBetween('created_at', [$request->start_date, $request->end_date])->get();
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $jumlah->count() . "</div>";
-                    })
-                    ->addColumn('jml_barang_keluar', function ($barang) use ($request) {
-                        $jumlah = Historibarang::where('barang_id', $barang->id)->where('status', 2)->whereBetween('created_at', [$request->start_date, $request->end_date])->get();
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $jumlah->count() . "</div>";
-                    })
-
-                    ->editColumn('stok', function ($barang) {
-                        switch ($barang->stok) {
-                            case 0:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: red'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-                            case 1:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: red'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-                            case 2:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: orange'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-                            case 3:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: orange'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-
-                            default:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: green'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-
-                        }
-                    })
-                    ->editColumn('barang_masuk', function ($barang) {
-                        if ($barang->barang_masuk == null) {
-                            $date = "Belum ada Update";
-                        }else {
-                            $date = date('d-m-Y H:i', strtotime($barang->barang_masuk));
-                        }
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $date . "</div>";
-                    })
-                    ->editColumn('barang_keluar', function ($barang) {
-                        if ($barang->barang_keluar == null) {
-                            $date = "Belum ada Update";
-                        }else {
-                            $date = date('d-m-Y H:i', strtotime($barang->barang_keluar));
-                        }
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $date . "</div>";
-                    })
-                    ->rawColumns(['aksi', 'jml_barang_masuk', 'jml_barang_keluar', 'jml_barang_rusak', 'stok', 'barang_masuk', 'barang_keluar'])
-                    ->make(true);
+                $query->withCount([
+                    'historibarang as jml_masuk' => function ($q) use ($request) {
+                        $q->where('status', 1)->whereBetween('created_at', [$request->start_date, $request->end_date]);
+                    },
+                    'historibarang as jml_keluar' => function ($q) use ($request) {
+                        $q->where('status', 2)->whereBetween('created_at', [$request->start_date, $request->end_date]);
+                    }
+                ]);
             } else {
-                $barang = Barang::orderBy('name', 'ASC')->with('historibarang')->get();
-                return datatables()->of($barang)
-                    ->addColumn('aksi', function ($barang) {
-                        return "<div class='d-flex justify-content-center align-items-center'><a href='" . route('gudang.histori', $barang->id) . "' class='keluar btn btn-elevated-dark w-28 me-1 mb-2' id=" . $barang->id . ">Histori</a><button class='edit btn btn-elevated-primary w-24 me-1 mb-2' id=".$barang->id.">Edit</button><button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$barang->id.">Hapus</button></div>";
-                    })
-                    ->addColumn('jml_barang_masuk', function ($barang) {
-                        $histori = Historibarang::where('barang_id', $barang->id)->where('status', 1)->whereDay('created_at', date('d'))->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->get();
-
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $histori->count() . "</div>";
-                    })
-                    ->addColumn('jml_barang_keluar', function ($barang) {
-                        $histori = Historibarang::where('barang_id', $barang->id)->where('status', 2)->whereDay('created_at', date('d'))->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->get();
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $histori->count() . "</div>";
-                    })
-
-                    ->editColumn('stok', function ($barang) {
-                        switch ($barang->stok) {
-                            case 0:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: red'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-                            case 1:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: red'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-                            case 2:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: orange'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-                            case 3:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: orange'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-
-                            default:
-                                return "<div class='d-flex justify-content-center align-items-center' style='color: green'><b>" . number_format($barang->stok, 0, ',', '.') . "</b></div>";
-                                break;
-                                break;
-                        }
-                    })
-                    ->editColumn('barang_masuk', function ($barang) {
-                        if ($barang->barang_masuk == null) {
-                            $date = "Belum ada Update";
-                        }else {
-                            $date = date('d-m-Y H:i', strtotime($barang->barang_masuk));
-                        }
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $date . "</div>";
-                    })
-                    ->editColumn('barang_keluar', function ($barang) {
-                        if ($barang->barang_keluar == null) {
-                            $date = "Belum ada Update";
-                        }else {
-                            $date = date('d-m-Y H:i', strtotime($barang->barang_keluar));
-                        }
-                        return "<div class='d-flex justify-content-center align-items-center'>" . $date . "</div>";
-                    })
-                    ->rawColumns(['aksi', 'jml_barang_masuk', 'jml_barang_keluar', 'jml_barang_rusak', 'stok', 'barang_masuk', 'barang_keluar'])
-                    ->make(true);
+                $query->withCount([
+                    'historibarang as jml_masuk' => function ($q) {
+                        $q->where('status', 1)->whereDate('created_at', date('Y-m-d'));
+                    },
+                    'historibarang as jml_keluar' => function ($q) {
+                        $q->where('status', 2)->whereDate('created_at', date('Y-m-d'));
+                    }
+                ]);
             }
+
+            return datatables()->of($query->orderBy('name', 'ASC'))
+                ->addColumn('aksi', function ($barang) {
+                    if (strtolower(Auth::user()->role->role) == 'superadmin') {
+                        return "<div class='text-center'><a target='_blank' href='" . route('gudang.histori', $barang->id) . "' class='btn btn-xs btn-dark'>Riwayat</a></div>";
+                    }
+                    return "<div class='d-flex gap-1 justify-content-center'>
+                                <a target='_blank' href='" . route('gudang.histori', $barang->id) . "' class='btn btn-xs btn-dark'>Riwayat</a>
+                                <button class='edit btn btn-xs btn-primary' id=".$barang->id.">Edit</button>
+                                <button class='delete btn btn-xs btn-danger' id=".$barang->id.">Hapus</button>
+                            </div>";
+                })
+                ->editColumn('jml_barang_masuk', function ($barang) {
+                    return "<div class='text-center fw-bold text-success'>" . ($barang->jml_masuk ?? 0) . "</div>";
+                })
+                ->editColumn('jml_barang_keluar', function ($barang) {
+                    return "<div class='text-center fw-bold text-danger'>" . ($barang->jml_keluar ?? 0) . "</div>";
+                })
+                ->editColumn('stok', function ($barang) {
+                    $color = 'text-success';
+                    if ($barang->stok <= 1) $color = 'text-danger';
+                    elseif ($barang->stok <= 3) $color = 'text-warning';
+                    return "<div class='text-center fw-bold $color'>" . number_format($barang->stok, 0, ',', '.') . "</div>";
+                })
+                ->editColumn('barang_masuk', function ($barang) {
+                    return $barang->barang_masuk ? date('d-m-Y H:i', strtotime($barang->barang_masuk)) : '-';
+                })
+                ->editColumn('barang_keluar', function ($barang) {
+                    return $barang->barang_keluar ? date('d-m-Y H:i', strtotime($barang->barang_keluar)) : '-';
+                })
+                ->rawColumns(['aksi', 'jml_barang_masuk', 'jml_barang_keluar', 'stok'])
+                ->make(true);
         }
         return view('gudang.index');
     }
 
     public function store(Request $request)
     {
+        if (strtolower(auth()->user()->role->role) == 'superadmin') {
+            return response()->json(['status' => 'error', 'text' => 'Akses ditolak: Superadmin hanya bisa melihat data.']);
+        }
         $validator = Validator::make($request->all(), [
             'name'              => 'required|string',
             'barcode'           => 'required|string|unique:barangs',
             'description'       => 'nullable|string'
-        ], [
-            'name.required'     => 'Isi kolom nama barang',
-            'barcode.required'  => 'Isi kolom barcode',
-            'barcode.unique'    => 'Barcode sudah terdaftar'
         ]);
 
         if ($validator->passes()) {
@@ -151,7 +93,6 @@ class GudangController extends Controller
                 'barcode'   => $request->barcode,
                 'description' => $request->description
             ]);
-
             return response()->json(['text' => 'Barang ' . $barang->name . ' berhasil ditambah.']);
         }
         return response()->json(['error' => $validator->errors()->all()]);
@@ -165,14 +106,13 @@ class GudangController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (strtolower(auth()->user()->role->role) == 'superadmin') {
+            return response()->json(['status' => 'error', 'text' => 'Akses ditolak: Superadmin hanya bisa melihat data.']);
+        }
         $validator = Validator::make($request->all(), [
             'name'              => 'required|string',
             'barcode'           => 'required|string|unique:barangs,barcode,'.$id,
             'description'       => 'nullable|string'
-        ], [
-            'name.required'     => 'Isi kolom nama barang',
-            'barcode.required'  => 'Isi kolom barcode',
-            'barcode.unique'    => 'Barcode sudah terdaftar'
         ]);
 
         if ($validator->passes()) {
@@ -182,7 +122,6 @@ class GudangController extends Controller
                 'barcode'   => $request->barcode,
                 'description' => $request->description
             ]);
-
             return response()->json(['text' => 'Barang ' . $barang->name . ' berhasil diubah.']);
         }
         return response()->json(['error' => $validator->errors()->all()]);
@@ -191,21 +130,18 @@ class GudangController extends Controller
     public function view_masuk()
     {
         if (request()->ajax()) {
-            $barang = Historibarang::where('status', 1)->whereDay('created_at', date('d'))->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->get();
-            return datatables()->of($barang)
-                ->addColumn('aksi', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'><button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$barang->id.">Hapus</button></div>";
+            $query = Historibarang::with('barang')
+                ->where('status', 1)
+                ->whereDate('created_at', date('Y-m-d'));
+
+            return datatables()->of($query)
+                ->addColumn('aksi', function ($h) {
+                    return "<button class='delete btn btn-xs btn-danger' id=".$h->id.">Hapus</button>";
                 })
-                ->addColumn('name', function ($barang) {
-                    return $barang->barang->name;
-                })
-                ->addColumn('barcode', function ($barang) {
-                    return $barang->barang->barcode;
-                })
-                ->editColumn('created_at', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'>" . date('d-m-Y H:i', strtotime($barang->created_at)) . "</div>";
-                })
-                ->rawColumns(['aksi', 'created_at', 'name', 'barcode'])
+                ->editColumn('name', function ($h) { return $h->barang->name ?? '-'; })
+                ->editColumn('barcode', function ($h) { return $h->barang->barcode ?? '-'; })
+                ->editColumn('created_at', function ($h) { return $h->created_at->format('d-m-Y H:i'); })
+                ->rawColumns(['aksi'])
                 ->make(true);
         }
         return view('gudang.masuk');
@@ -214,21 +150,18 @@ class GudangController extends Controller
     public function view_keluar()
     {
         if (request()->ajax()) {
-            $barang = Historibarang::where('status', 2)->whereDay('created_at', date('d'))->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->get();
-            return datatables()->of($barang)
-                ->addColumn('aksi', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'><button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$barang->id.">Hapus</button></div>";
+            $query = Historibarang::with('barang')
+                ->where('status', 2)
+                ->whereDate('created_at', date('Y-m-d'));
+
+            return datatables()->of($query)
+                ->addColumn('aksi', function ($h) {
+                    return "<button class='delete btn btn-xs btn-danger' id=".$h->id.">Hapus</button>";
                 })
-                ->addColumn('name', function ($barang) {
-                    return $barang->barang->name;
-                })
-                ->addColumn('barcode', function ($barang) {
-                    return $barang->barang->barcode;
-                })
-                ->editColumn('created_at', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'>" . date('d-m-Y H:i', strtotime($barang->created_at)) . "</div>";
-                })
-                ->rawColumns(['aksi', 'created_at', 'name', 'barcode'])
+                ->editColumn('name', function ($h) { return $h->barang->name ?? '-'; })
+                ->editColumn('barcode', function ($h) { return $h->barang->barcode ?? '-'; })
+                ->editColumn('created_at', function ($h) { return $h->created_at->format('d-m-Y H:i'); })
+                ->rawColumns(['aksi'])
                 ->make(true);
         }
         return view('gudang.keluar');
@@ -237,137 +170,98 @@ class GudangController extends Controller
     public function post_masuk(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'barcode'           => 'required|string',
-        ], [
-            'barcode.required'  => 'Isi kolom barcode',
+            'barcode' => 'required|string',
         ]);
 
         if ($validator->passes()) {
             $barang = Barang::where('barcode', $request->barcode)->first();
             if ($barang) {
-                $histori = Historibarang::create([
-                    'barang_id' => $barang->id,
-                    'status' => 1
-                ]);
+                $histori = Historibarang::create(['barang_id' => $barang->id, 'status' => 1]);
                 $barang->update(['barang_masuk' => $histori->created_at, 'stok' => $barang->stok + 1]);
                 return response()->json(['status' => 'sukses', 'text' => 'Barang masuk '.$barang->name. ' berhasil']);
-            }else {
-                return response()->json(['status' => 'error', 'text' => 'Barcode Barang tidak ditemukan']);
             }
-
+            return response()->json(['status' => 'error', 'text' => 'Barcode tidak ditemukan']);
         }
-
         return response()->json(['error' => $validator->errors()->all()]);
     }
 
     public function post_keluar(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'barcode'           => 'required|string',
-        ], [
-            'barcode.required'  => 'Isi kolom barcode',
+            'barcode' => 'required|string',
         ]);
 
         if ($validator->passes()) {
             $barang = Barang::where('barcode', $request->barcode)->first();
             if ($barang) {
-                $histori = Historibarang::create([
-                    'barang_id' => $barang->id,
-                    'status' => 2
-                ]);
+                $histori = Historibarang::create(['barang_id' => $barang->id, 'status' => 2]);
                 $barang->update(['barang_keluar' => $histori->created_at, 'stok' => $barang->stok - 1]);
                 return response()->json(['status' => 'sukses', 'text' => 'Barang keluar '.$barang->name. ' berhasil']);
-            }else {
-                return response()->json(['status' => 'error', 'text' => 'Barcode Barang tidak ditemukan']);
             }
-
+            return response()->json(['status' => 'error', 'text' => 'Barcode tidak ditemukan']);
         }
-
         return response()->json(['error' => $validator->errors()->all()]);
     }
 
     public function delete_barang($id)
     {
-        $barang = Barang::find($id);
-        foreach ($barang->historibarang as $key) {
-            $key->delete();
+        if (strtolower(auth()->user()->role->role) == 'superadmin') {
+            return response()->json(['status' => 'error', 'text' => 'Akses ditolak: Superadmin hanya bisa melihat data.']);
         }
-        $barang->delete();
-        return response()->json(['status' => 'sukses', 'text'=>'Barang '.$barang->name.' berhasil dihapus']);
+        $barang = Barang::find($id);
+        if ($barang) {
+            Historibarang::where('barang_id', $id)->delete();
+            $barang->delete();
+            return response()->json(['status' => 'sukses', 'text'=>'Barang '.$barang->name.' berhasil dihapus']);
+        }
+        return response()->json(['status' => 'error', 'text'=>'Data tidak ditemukan']);
     }
 
     public function delete($id)
     {
-        $histori = Historibarang::find($id);
-        $histori->delete();
-        $histori->barang->update(['stok' => $histori->barang->stok - 1]);
-        return response()->json(['status' => 'sukses', 'text'=>'Histori Barang '.$histori->barang->name.' berhasil dihapus']);
+        $histori = Historibarang::with('barang')->find($id);
+        if ($histori) {
+            $histori->barang->decrement('stok');
+            $histori->delete();
+            return response()->json(['status' => 'sukses', 'text'=>'Histori berhasil dihapus']);
+        }
+        return response()->json(['status' => 'error', 'text'=>'Data tidak ditemukan']);
     }
 
     public function delete_keluar($id)
     {
-        $histori = Historibarang::find($id);
-        $histori->delete();
-        $histori->barang->update(['stok' => $histori->barang->stok + 1]);
-        return response()->json(['status' => 'sukses', 'text'=>'Histori Barang '.$histori->barang->name.' berhasil dihapus']);
+        $histori = Historibarang::with('barang')->find($id);
+        if ($histori) {
+            $histori->barang->increment('stok');
+            $histori->delete();
+            return response()->json(['status' => 'sukses', 'text'=>'Histori berhasil dihapus']);
+        }
+        return response()->json(['status' => 'error', 'text'=>'Data tidak ditemukan']);
     }
 
     public function histori(Request $request, $id)
     {
-        // $barang = Historibarang::where('barang_id', $id)->whereBetween('created_at', [$request->start_date, $request->end_date])->where('created_at', 'DESC')->get();
-        // dd($barang);
         if (request()->ajax()) {
+            $query = Historibarang::with('barang')->where('barang_id', $id)->orderBy('created_at', 'DESC');
+            
             if (!empty($request->start_date)) {
-                $barang = Historibarang::where('barang_id', $id)->orderBy('created_at', 'DESC')->whereBetween('created_at', [$request->start_date, $request->end_date])->get();
-                return datatables()->of($barang)
-                ->addColumn('aksi', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'><button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$barang->id.">Hapus</button></div>";
-                })
-                ->addColumn('name', function ($barang) {
-                    return $barang->barang->name;
-                })
-                ->addColumn('barcode', function ($barang) {
-                    return $barang->barang->barcode;
-                })
-                ->editColumn('created_at', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'>" . date('d-m-Y H:i', strtotime($barang->created_at)) . "</div>";
-                })
-                ->editColumn('status', function ($barang) {
-                    if ($barang->status == 1) {
-                        return "<div class='d-flex justify-content-center align-items-center' style='color: green'><b>Barang Masuk</b></div>";
-                    }else {
-                        return "<div class='d-flex justify-content-center align-items-center' style='color: red'><b>Barang Keluar</b></div>";
-
-                    }
-                })
-                ->rawColumns(['aksi', 'created_at', 'name', 'barcode', 'status'])
-                ->make(true);
-            }else {
-                $barang = Historibarang::where('barang_id', $id)->orderBy('created_at', 'DESC')->whereDay('created_at', date('d'))->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->get();
-                return datatables()->of($barang)
-                ->addColumn('aksi', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'><button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=".$barang->id.">Hapus</button></div>";
-                })
-                ->addColumn('name', function ($barang) {
-                    return $barang->barang->name;
-                })
-                ->addColumn('barcode', function ($barang) {
-                    return $barang->barang->barcode;
-                })
-                ->editColumn('created_at', function ($barang) {
-                    return "<div class='d-flex justify-content-center align-items-center'>" . date('d-m-Y H:i', strtotime($barang->created_at)) . "</div>";
-                })
-                ->editColumn('status', function ($barang) {
-                    if ($barang->status == 1) {
-                        return "<div class='d-flex justify-content-center align-items-center' style='color: green'><b>Barang Masuk</b></div>";
-                    }else {
-                        return "<div class='d-flex justify-content-center align-items-center' style='color: red'><b>Barang Keluar</b></div>";
-
-                    }
-                })
-                ->rawColumns(['aksi', 'created_at', 'name', 'barcode', 'status'])
-                ->make(true);
+                $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
+            } else {
+                $query->whereDate('created_at', date('Y-m-d'));
             }
+
+            return datatables()->of($query)
+                ->addColumn('aksi', function ($h) {
+                    return "<button class='delete btn btn-xs btn-danger' id=".$h->id.">Hapus</button>";
+                })
+                ->editColumn('name', function ($h) { return $h->barang->name ?? '-'; })
+                ->editColumn('barcode', function ($h) { return $h->barang->barcode ?? '-'; })
+                ->editColumn('created_at', function ($h) { return $h->created_at->format('d-m-Y H:i'); })
+                ->editColumn('status', function ($h) {
+                    return $h->status == 1 ? '<b class="text-success">Masuk</b>' : '<b class="text-danger">Keluar</b>';
+                })
+                ->rawColumns(['aksi', 'status'])
+                ->make(true);
         }
         $query = Barang::find($id);
         return view('gudang.histori', compact('query'));
@@ -381,18 +275,14 @@ class GudangController extends Controller
     public function post_barcode(Request $request)
     {
         $this->validate($request,[
-            'barcode' => 'required|string|unique:barangs',
-            'jumlah'    => 'required|string'
-        ],[
-            'barcode.required' => 'Kolom Barcode masih kosong',
-            'barcode.unique' => 'Barcode ini sudah terdaftar',
-            'jumlah.required'   => 'Kolom jumlah masih kosong'
+            'barcode' => 'required|string',
+            'jumlah'  => 'required|numeric|min:1|max:100'
         ]);
 
-        for ($i=0; $i < $request->jumlah; $i++) {
-            $qrcode[] = ['barcode' => base64_encode(QrCode::format('svg')->size(100)->errorCorrection('H')->generate($request->barcode)), 'nomor' => $request->barcode];
-        }
-        // dd($qrcode);
+        $qrData = QrCode::format('svg')->size(150)->errorCorrection('H')->generate($request->barcode);
+
+        $qrcode = array_fill(0, $request->jumlah, ['barcode' => $qrData, 'nomor' => $request->barcode]);
+        
         $pdf = PDF::loadView('gudang.cetak', compact('qrcode'));
         return $pdf->stream();
     }

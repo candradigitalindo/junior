@@ -20,8 +20,8 @@
         <!-- BEGIN: Mobile Menu -->
         <div class="mobile-menu d-md-none">
             <div class="mobile-menu-bar">
-                <a href="" class="d-flex me-auto">
-                    <img alt="logo Kilat Premium Wash" class="w-10" src="{{ asset('office/dist/images/logo.png') }}">
+                <a href="" class="d-flex me-auto text-decoration-none pt-4 ps-4">
+                    <span class="text-white fw-bold fs-xl" style="letter-spacing: 1px;">JUNIOR <span class="text-warning">PREMIUM</span></span>
                 </a>
                 <a href="javascript:;" id="mobile-menu-toggler" class="mobile-menu-bar__toggler"> <i data-feather="bar-chart-2" class="w-8 h-8 text-white"></i> </a>
             </div>

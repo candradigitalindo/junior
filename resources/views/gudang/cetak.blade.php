@@ -3,14 +3,34 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Barcode</title>
+    <style>
+        body { padding: 0; margin: 0; }
+        .barcode-item {
+            display: inline-block;
+            margin: 15px;
+            text-align: center;
+            width: 150px;
+        }
+        .qr-image {
+            width: 150px;
+            height: 150px;
+        }
+        .barcode-svg svg {
+            width: 150px;
+            height: 150px;
+        }
+    </style>
 </head>
 
 <body>
     @foreach ($qrcode as $item)
-        <img style="margin: 15px" src="data:image/png;base64, {!! $item['barcode'] !!}">
+        <div class="barcode-item">
+            <div class="barcode-svg">{!! $item['barcode'] !!}</div>
+            <div style="font-family: sans-serif; font-size: 12px; margin-top: 10px; font-weight: bold;">
+                {{ $item['nomor'] }}
+            </div>
+        </div>
     @endforeach
 </body>
 

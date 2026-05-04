@@ -17,10 +17,11 @@ class Gudang
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role->role == 'gudang' || 'Superadmin') {
+        $role = strtolower(Auth::user()->role->role);
+        if (Auth::check() && ($role == 'gudang' || $role == 'superadmin')) {
             return $next($request);
         }
 
-        return back();
+        return redirect(route('home'));
     }
 }

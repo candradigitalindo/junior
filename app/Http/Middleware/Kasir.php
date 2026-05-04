@@ -17,10 +17,10 @@ class Kasir
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role->role == 'kasir') {
+        if (Auth::check() && strtolower(Auth::user()->role->role) == 'kasir') {
             return $next($request);
         }
 
-        return back();
+        return redirect(route('home'));
     }
 }

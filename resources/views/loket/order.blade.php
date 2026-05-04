@@ -244,12 +244,48 @@ Orderan
 </div>
 
 @endsection
+@section('css')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .select2-container--default .select2-selection--single {
+            border: 1px solid #d2d6dc;
+            border-radius: 0.375rem;
+            height: 38px;
+            display: flex;
+            align-items: center;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 38px;
+            padding-left: 12px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+        @media (max-width: 768px) {
+            .select2-container--default .select2-selection--single {
+                height: 45px;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 45px;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__arrow {
+                height: 43px;
+            }
+        }
+    </style>
+@endsection
 @section('js')
 <script
   src="https://code.jquery.com/jquery-3.6.0.js"
   integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
   crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        $(document).ready(function() {
+            $('select').select2({
+                width: '100%'
+            });
+        });
         $('#tipe_mobil').change(function () {
             if ($('#tipe_mobil').val() == 'Lainnya') {
                 $('#kolom_lainnya').show()

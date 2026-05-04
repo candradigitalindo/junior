@@ -24,8 +24,8 @@
     <!-- BEGIN: Mobile Menu -->
     <div class="mobile-menu d-md-none">
         <div class="mobile-menu-bar">
-            <a href="" class="d-flex me-auto">
-                <img alt="logo Kilat Premium Wash" class="w-10" src="{{ asset('image/no_photo_tipe_mobil.png') }}">
+            <a href="" class="d-flex me-auto text-decoration-none">
+                <span class="text-white fw-bold fs-xl" style="letter-spacing: 1px;">JUNIOR <span class="text-warning">PREMIUM</span></span>
             </a>
             <a href="javascript:;" id="mobile-menu-toggler" class="mobile-menu-bar__toggler"> <i
                     data-feather="bar-chart-2" class="w-8 h-8 text-warning"></i> </a>
@@ -134,41 +134,33 @@
                     </a>
                 </li> --}}
             @endif
-            @if (auth()->user()->role->role == 'kasir')
+            @if (strtolower(auth()->user()->role->role) == 'kasir')
                 <li>
-                    <a href="{{ route('kasir.index') }}"
-                        class="menu {{ request()->is('kasir') ? 'menu--active' : '' }}">
+                    <a href="{{ route('kasir.dashboard') }}"
+                        class="menu {{ request()->is('dashboard*') ? 'menu--active' : '' }}">
                         <div class="menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="menu__title"> Kasir <i
-                                class="menu__sub-icon {{ request()->is('kasir') ? 'menu__sub-icon--active' : '' }} "></i>
-                        </div>
+                        <div class="menu__title"> Dashboard </div>
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('tagihan.index') }}"
-                        class="menu {{ request()->is('tagihan') ? 'menu--active' : '' }}">
-                        <div class="menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="menu__title"> Tagihan <i
-                                class="menu__sub-icon {{ request()->is('tagihan') ? 'menu__sub-icon--active' : '' }} "></i>
-                        </div>
+                    <a href="{{ route('kasir.unpaid') }}"
+                        class="menu {{ request()->is('kasir/unpaid') ? 'menu--active' : '' }}">
+                        <div class="menu__icon"> <i data-feather="alert-circle"></i> </div>
+                        <div class="menu__title"> Belum Bayar </div>
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('pemasukan.index') }}"
                         class="menu {{ request()->is('pemasukan') ? 'menu--active' : '' }}">
-                        <div class="menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="menu__title"> Pemasukan Lainnya <i
-                                class="menu__sub-icon {{ request()->is('pemasukan') ? 'menu__sub-icon--active' : '' }} "></i>
-                        </div>
+                        <div class="menu__icon"> <i data-feather="plus-square"></i> </div>
+                        <div class="menu__title"> Pemasukan Lain </div>
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('pengeluaran.index') }}"
                         class="menu {{ request()->is('pengeluaran') ? 'menu--active' : '' }}">
-                        <div class="menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="menu__title"> Pengeluaran <i
-                                class="menu__sub-icon {{ request()->is('pengeluaran') ? 'menu__sub-icon--active' : '' }} "></i>
-                        </div>
+                        <div class="menu__icon"> <i data-feather="minus-square"></i> </div>
+                        <div class="menu__title"> Pengeluaran </div>
                     </a>
                 </li>
             @endif
@@ -182,9 +174,8 @@
         class="border-bottom border-theme-29 dark-border-dark-3 mt-n10 mt-md-n5 mx-n3 mx-sm-n8 px-3 px-sm-8 pt-3 pt-md-0 mb-10">
         <div class="top-bar-boxed d-flex align-items-center">
             <!-- BEGIN: Logo -->
-            <a href="" class="-intro-x d-none d-md-flex">
-                <img alt="Rubick Tailwind HTML Admin Template" class="w-10"
-                    src="{{ asset('image/no_photo_tipe_mobil.png') }}">
+            <a href="" class="-intro-x d-none d-md-flex text-decoration-none">
+                <span class="text-white fw-bold fs-xl" style="letter-spacing: 1px;">JUNIOR <span class="text-warning">PREMIUM</span></span>
             </a>
             <!-- END: Logo -->
             <!-- BEGIN: Breadcrumb -->
@@ -267,40 +258,33 @@
                     </a>
                 </li>
             @endif
-            @if (auth()->user()->role->role == 'kasir')
+            @if (strtolower(auth()->user()->role->role) == 'kasir')
                 <li>
                     <a href="{{ route('kasir.dashboard') }}"
                         class="top-menu {{ request()->is('dashboard*') ? 'top-menu--active' : '' }}">
                         <div class="top-menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="top-menu__title"> Dashboard <i class="top-menu__sub-icon"></i> </div>
+                        <div class="top-menu__title"> Dashboard </div>
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('kasir.index') }}"
-                        class="top-menu {{ request()->is('kasir*') ? 'top-menu--active' : '' }}">
-                        <div class="top-menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="top-menu__title"> Kasir <i class="top-menu__sub-icon"></i> </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ route('tagihan.index') }}"
-                        class="top-menu {{ request()->is('tagihan*') ? 'top-menu--active' : '' }}">
-                        <div class="top-menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="top-menu__title"> Tagihan <i class="top-menu__sub-icon"></i> </div>
+                    <a href="{{ route('kasir.unpaid') }}"
+                        class="top-menu {{ request()->is('kasir/unpaid') ? 'top-menu--active' : '' }}">
+                        <div class="top-menu__icon"> <i data-feather="alert-circle"></i> </div>
+                        <div class="top-menu__title"> Belum Bayar </div>
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('pemasukan.index') }}"
                         class="top-menu {{ request()->is('pemasukan*') ? 'top-menu--active' : '' }}">
-                        <div class="top-menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="top-menu__title"> Pemasukan Lainnya <i class="top-menu__sub-icon"></i> </div>
+                        <div class="top-menu__icon"> <i data-feather="plus-square"></i> </div>
+                        <div class="top-menu__title"> Pemasukan Lain </div>
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('pengeluaran.index') }}"
                         class="top-menu {{ request()->is('pengeluaran*') ? 'top-menu--active' : '' }}">
-                        <div class="top-menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="top-menu__title"> Pengeluaran <i class="top-menu__sub-icon"></i> </div>
+                        <div class="top-menu__icon"> <i data-feather="minus-square"></i> </div>
+                        <div class="top-menu__title"> Pengeluaran </div>
                     </a>
                 </li>
             @endif
@@ -315,12 +299,26 @@
             @endif
 
 
-            @if (auth()->user()->role->role == 'Superadmin')
+            @if (strtolower(auth()->user()->role->role) == 'superadmin')
                 <li>
                     <a href="{{ route('admin.index') }}"
                         class="top-menu {{ request()->is('admin*') ? 'top-menu--active' : '' }}">
                         <div class="top-menu__icon"> <i data-feather="home"></i> </div>
-                        <div class="top-menu__title"> Dashboard <i class="top-menu__sub-icon"></i> </div>
+                        <div class="top-menu__title"> Dashboard </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('pemasukan.index') }}"
+                        class="top-menu {{ request()->is('pemasukan*') ? 'top-menu--active' : '' }}">
+                        <div class="top-menu__icon"> <i data-feather="plus-square"></i> </div>
+                        <div class="top-menu__title"> Pemasukan Lain </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('pengeluaran.index') }}"
+                        class="top-menu {{ request()->is('pengeluaran*') ? 'top-menu--active' : '' }}">
+                        <div class="top-menu__icon"> <i data-feather="minus-square"></i> </div>
+                        <div class="top-menu__title"> Pengeluaran </div>
                     </a>
                 </li>
 
@@ -417,11 +415,7 @@
                     <div class="modal-footer text-end">
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-outline-secondary w-32 me-1">Cancel</button>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button class="btn btn-primary w-32" type="submit" id="logout">Keluar</button>
-                            {{-- <a  href="#" onclick="$('#logout').click()">Keluar</a> --}}
-                        </form>
+                        <a href="{{ url('logout') }}" class="btn btn-primary w-32">Keluar</a>
                     </div>
                     <!-- END: Modal Footer -->
                 </div>

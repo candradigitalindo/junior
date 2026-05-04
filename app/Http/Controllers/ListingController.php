@@ -182,11 +182,8 @@ class ListingController extends Controller
                     }
                 })
                 ->editColumn('tipe_mobil', function ($booking) {
-                    if ($booking->photo_tipe_mobil == null || $booking->photo_tipe_mobil == '') {
-                        $tipe = '<center><img src="' . asset('image/no_photo_tipe_mobil.png') . '"  style="width: 150px; height: 100px; padding: 0px; box-sizing: border-box; "></div></center><br><center><h3>' . $booking->tipe_mobil . '</h3></center>';
-                        return $tipe;
-                    }
-                    $tipe = '<center><img src="' . asset('storage/tipemobil/' . $booking->photo_tipe_mobil) . '" style="width: 200px" style="height: 200px"/></center><br><center><h3>' . $booking->tipe_mobil . '</h3></center>';
+                    $url = $booking->photo_tipe_mobil ? asset('storage/tipemobil/' . $booking->photo_tipe_mobil) : asset('image/no_photo_tipe_mobil.png');
+                    $tipe = '<center><img src="' . $url . '" style="width: 150px; height: auto;"/></center><br><center><h3>' . $booking->tipe_mobil . '</h3></center>';
                     return $tipe;
                 })
                 ->rawColumns(['aksi', 'no_pol_kendaraan', 'tgl_booking', 'description', 'status', 'tipe_mobil'])

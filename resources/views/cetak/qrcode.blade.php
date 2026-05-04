@@ -30,7 +30,7 @@
         <table style='width:250px; font-size:16pt; font-family:calibri; border-collapse: collapse;' border='0'>
             <tr>
                 <td width='70%' align='CENTER' vertical-align:top'><span style='color:black;'>
-                        {{ $qrcode }}
+                        {!! $qrcode !!}
                 </td>
             </tr>
             <td width='70%' align='CENTER' vertical-align:top'><span style='color:black;'>

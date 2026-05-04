@@ -21,7 +21,7 @@ class CreateBookingordersTable extends Migration
             $table->bigInteger('discount')->default(0);
             $table->string('extraservice_name')->nullable();
             $table->bigInteger('extraservice_price')->default(0);
-            $table->bigInteger('total');
+            $table->bigInteger('total')->nullable();
             $table->timestamps();
         });
     }

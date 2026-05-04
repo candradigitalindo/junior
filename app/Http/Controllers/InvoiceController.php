@@ -26,7 +26,7 @@ class InvoiceController extends Controller
     {
         $transaksi = Transaksi::where('booking_id', $id)->with('booking')->first();
         $booking = Booking::where('id', $transaksi->booking_id)->with('bookingorder')->first();
-        $qrcode = base64_encode(QrCode::format('svg')->size(100)->errorCorrection('H')->generate($booking->id));
+        $qrcode = QrCode::format('svg')->size(100)->errorCorrection('H')->generate($booking->id);
         $pdf = PDF::loadView('cetak.invoice', compact('transaksi', 'qrcode', 'booking'));
         return $pdf->stream();
     }

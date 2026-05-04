@@ -17,10 +17,10 @@ class Pengerjaan
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role->role == 'pengerjaan') {
+        if (Auth::check() && strtolower(Auth::user()->role->role) == 'pengerjaan') {
             return $next($request);
         }
 
-        return back();
+        return redirect(route('home'));
     }
 }

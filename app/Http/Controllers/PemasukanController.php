@@ -6,40 +6,28 @@ use App\Models\Pemasukan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Validator;
+use Intervention\Image\Facades\Image;
 
 class PemasukanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pemasukan = Pemasukan::whereYear('created_at', date('Y'))->orderBy('created_at', 'DESC')->get();
+        $start = $request->start_date ?: date('Y-m-d');
+        $end = $request->end_date ?: date('Y-m-d');
+
         if (request()->ajax()) {
-            return datatables()->of($pemasukan)
-                ->addColumn('aksi', function ($pemasukan) {
-
-                    $button = "<div class='d-flex justify-content-center align-items-center'>
-                <button class='edit btn btn-elevated-warning w-24 me-1 mb-2' id=" . $pemasukan->id . ">Edit</button>
-                <button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=" . $pemasukan->id . ">Hapus</button>
-                </div>";
-
-                    return $button;
+            $query = Pemasukan::query()
+                ->whereDate('created_at', '>=', $start)
+                ->whereDate('created_at', '<=', $end)
+                ->orderBy('created_at', 'DESC');
+            
+            $totalSum = (clone $query)->sum('jumlah') ?: 0;
+            
+            return datatables()->of($query)
+                ->editColumn('created_at', function ($p) {
+                    return $p->created_at->format('Y-m-d H:i:s');
                 })
-                ->editColumn('name', function ($pemasukan) {
-                    $name = '<a href="#" class="fw-medium text-nowrap">' . $pemasukan->name . '</a>';
-                    return $name;
-                })
-                ->editColumn('jumlah', function ($pemasukan) {
-                    $jumlah = '<a href="#" class="fw-medium text-nowrap">' . number_format($pemasukan->jumlah, 0, ',', '.') . '</a>';
-                    return $jumlah;
-                })
-                ->editColumn('created_at', function ($pemasukan) {
-                    $tgl = '<a href="#" class="fw-medium text-nowrap">' . date('d M Y H:i', strtotime($pemasukan->created_at)) . '</a>';
-                    return $tgl;
-                })
-                ->editColumn('foto', function ($pemasukan) {
-                    $foto = '<img src="' . asset('storage/bukti-pemasukan/' . $pemasukan->foto) . '" style="width: 100px" style="height: 100px"/>';
-                    return $foto;
-                })
-                ->rawColumns(['aksi', 'jumlah', 'name', 'created_at', 'foto'])
+                ->with('totalSum', $totalSum)
                 ->make(true);
         }
         return view('kasir.pemasukan');
@@ -48,23 +36,37 @@ class PemasukanController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'              => 'required|string',
-            'jumlah'            => 'required|string',
-            'foto_pemasukan'  => 'required|image'
+            'name'            => 'required|string',
+            'jumlah'          => 'required|numeric',
+            'foto_pemasukan'  => 'required|image|max:10240'
         ], [
-            'name.required'     => 'Isi kolom keterangan',
-            'jumlah.required'   => 'Isi jumlah',
-            'foto_pemasukan.required' => 'Isi Foto Bukti'
+            'name.required'           => 'Isi kolom keterangan',
+            'jumlah.required'         => 'Isi jumlah',
+            'foto_pemasukan.required' => 'Isi Foto Bukti',
+            'foto_pemasukan.max'      => 'Ukuran file maksimal 10MB'
         ]);
 
         if ($validator->passes()) {
+            $file = $request->file('foto_pemasukan');
+            $fileName = $file->hashName();
+            
+            // Image Processing
+            $img = Image::make($file->path());
+            $img->resize(1000, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
 
-            $img = $request->file('foto_pemasukan');
-            $img->storeAs('public/bukti-pemasukan', $img->hashName());
+            if (!Storage::disk('public')->exists('bukti-pemasukan')) {
+                Storage::disk('public')->makeDirectory('bukti-pemasukan');
+            }
+
+            $img->save(storage_path('app/public/bukti-pemasukan/' . $fileName), 85);
+
             $pemasukan = Pemasukan::create([
                 'name'  => ucwords($request->name),
                 'jumlah' => $request->jumlah,
-                'foto'  => $img->hashName()
+                'foto'  => $fileName
             ]);
 
             return response()->json(['text' => 'Pemasukan ' . $pemasukan->name . ' berhasil ditambahkan']);
@@ -80,39 +82,46 @@ class PemasukanController extends Controller
 
     public function update(Request $request, $id)
     {
-
         $validator = Validator::make($request->all(), [
             'editname'              => 'required|string',
-            'editjumlah'            => 'required|string',
-            'editfoto_pemasukan'  => 'nullable|image'
+            'editjumlah'            => 'required|numeric',
+            'editfoto_pemasukan'  => 'nullable|image|max:10240'
         ], [
             'editname.required'     => 'Isi kolom keterangan',
             'editjumlah.required'   => 'Isi jumlah',
-            'editfoto_pemasukan.required' => 'Isi Foto Bukti'
+            'editfoto_pemasukan.max' => 'Ukuran file maksimal 10MB'
         ]);
 
         if ($validator->passes()) {
             $pemasukan = Pemasukan::find($id);
-            if ($request->editfoto_pemasukan) {
-                if ($pemasukan->foto != null) {
-                    Storage::disk('local')->delete('public/bukti-pemasukan/' . $pemasukan->foto);
+            $updateData = [
+                'name'  => ucwords($request->editname),
+                'jumlah' => $request->editjumlah,
+            ];
+
+            if ($request->hasFile('editfoto_pemasukan')) {
+                // Delete old photo
+                if ($pemasukan->foto && Storage::disk('public')->exists('bukti-pemasukan/' . $pemasukan->foto)) {
+                    Storage::disk('public')->delete('bukti-pemasukan/' . $pemasukan->foto);
                 }
-                $img = $request->file('editfoto_pemasukan');
-                $img->storeAs('public/bukti-pemasukan', $img->hashName());
-                $pemasukan->update([
-                    'name'  => ucwords($request->editname),
-                    'jumlah' => $request->editjumlah,
-                    'foto'  => $img->hashName()
-                ]);
-                return response()->json(['text' => 'Pemasukan ' . $pemasukan->name . ' berhasil diubah']);
+
+                $file = $request->file('editfoto_pemasukan');
+                $fileName = $file->hashName();
+                
+                // Image Processing
+                $img = Image::make($file->path());
+                $img->resize(1000, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+
+                $img->save(storage_path('app/public/bukti-pemasukan/' . $fileName), 85);
+                $updateData['foto'] = $fileName;
             }
 
-            $pemasukan->update([
-                'name'  => ucwords($request->editname),
-                'jumlah' => $request->editjumlah
-            ]);
+            $pemasukan->update($updateData);
 
-            return response()->json(['text' => 'Pengeluaran ' . $pemasukan->name . ' berhasil diubah']);
+            return response()->json(['text' => 'Pemasukan ' . $pemasukan->name . ' berhasil diubah']);
         }
 
         return response()->json(['error' => $validator->errors()->all()]);
@@ -121,7 +130,9 @@ class PemasukanController extends Controller
     public function destroy($id)
     {
         $pemasukan = Pemasukan::find($id);
-        Storage::disk('local')->delete('public/bukti-pemasukan/' . $pemasukan->foto);
+        if ($pemasukan->foto && Storage::disk('public')->exists('bukti-pemasukan/' . $pemasukan->foto)) {
+            Storage::disk('public')->delete('bukti-pemasukan/' . $pemasukan->foto);
+        }
         $pemasukan->delete();
         return response()->json(['text' => 'Pemasukan ' . $pemasukan->name . ' berhasil dihapus']);
     }

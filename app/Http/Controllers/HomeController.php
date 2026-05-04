@@ -26,9 +26,9 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $role = Auth::user()->role->role;
+        $role = strtolower(Auth::user()->role->role);
         switch ($role) {
-            case 'Superadmin':
+            case 'superadmin':
                 return redirect(route('admin.index'));
                 break;
             case 'loket':
@@ -47,7 +47,7 @@ class HomeController extends Controller
                 return redirect(route('gudang.index'));
                 break;
             default:
-                # code...
+                return redirect(route('landing.index'));
                 break;
         }
     }

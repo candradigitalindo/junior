@@ -28,7 +28,7 @@ Kontak Kami
                             <div class="icon-bx-xs border-1"> <a href="#" class="icon-cell"><i class="ti-location-pin"></i></a> </div>
                             <div class="icon-content">
                                 <h6 class="text-uppercase m-tb0 dlab-tilte">Address:</h6>
-                                <p>Jl. Garuda No.79, Sei Sikambing B, Kec. Medan Sunggal, Kota Medan, Sumatera Utara.</p>
+                                <p>Jl. Perjuangan No.23, Tj. Rejo, Kec. Medan Sunggal, Kota Medan, Sumatera Utara 20122.</p>
                             </div>
                         </li>
 
@@ -42,7 +42,7 @@ Kontak Kami
                     </ul>
                     <div class="m-t20">
                         <ul class="dlab-social-icon dez-border dlab-social-icon-lg">
-                            <li><a class="fab fa-instagram bg-primary" href="https://www.instagram.com/kilatpremiumwash/" target="blank"></a></li>
+                            <li><a class="fab fa-instagram bg-primary" href="https://www.instagram.com/juniorwash/" target="blank"></a></li>
 
                         </ul>
                     </div>

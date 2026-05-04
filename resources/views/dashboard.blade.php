@@ -1,486 +1,356 @@
 @extends('layouts.office')
+
 @section('title')
-    Dashboard
+    Dashboard | JUNIOR AUTO CARE
 @endsection
+
 @section('content')
-    <div class="grid columns-12 gap-6">
-        <div class="g-col-12 g-col-xxl-9">
-            <div class="grid columns-12 gap-6">
-                <!-- BEGIN: General Report -->
-                <div class="g-col-12 mt-8">
-                    <div class="intro-y d-flex align-items-center h-10">
-                        <h2 class="fs-lg fw-medium truncate me-5">
-                            General Report
-                        </h2>
-                        <a href="" class="ms-auto d-flex align-items-center text-theme-1 dark-text-theme-10"> <i
-                                data-feather="refresh-ccw" class="w-4 h-4 me-3"></i> Reload Data </a>
-                    </div>
-                    <div class="grid columns-12 gap-6 mt-5">
-                        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
-                            <div class="report-box zoom-in">
-                                <div class="box p-5">
-                                    <div class="d-flex">
-                                        <i data-feather="users" class="report-box__icon text-theme-12"></i>
-
-                                    </div>
-                                    <div class="report-box__total fs-3xl fw-medium mt-6">
-                                        {{ number_format($booking, 0, ',', '.') }}</div>
-                                    <div class="fs-base text-gray-600 mt-1">Booking {{ date('M Y') }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
-                            <div class="report-box zoom-in">
-                                <div class="box p-5">
-                                    <div class="d-flex">
-                                        <i data-feather="repeat" class="report-box__icon text-theme-12"></i>
-
-                                    </div>
-                                    <div class="report-box__total fs-3xl fw-medium mt-6">
-                                        {{ number_format($kunjungan, 0, ',', '.') }}</div>
-                                    <div class="fs-base text-gray-600 mt-1">Kunjungan {{ date('M Y') }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
-                            <div class="report-box zoom-in">
-                                <div class="box p-5">
-                                    <div class="d-flex">
-                                        <i data-feather="box" class="report-box__icon text-theme-12"></i>
-
-                                    </div>
-                                    <div class="report-box__total fs-3xl fw-medium mt-6">
-                                        {{ number_format($product, 0, ',', '.') }}</div>
-                                    <div class="fs-base text-gray-600 mt-1">Produk</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
-                            <div class="report-box zoom-in">
-                                <div class="box p-5">
-                                    <div class="d-flex">
-                                        <i data-feather="user-check" class="report-box__icon text-theme-12"></i>
-
-                                    </div>
-                                    <div class="report-box__total fs-3xl fw-medium mt-6">
-                                        {{ number_format($pengguna, 0, ',', '.') }}</div>
-                                    <div class="fs-base text-gray-600 mt-1">User Pengguna</div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-                <!-- END: General Report -->
-                <!-- BEGIN: Sales Report -->
-                <div class="g-col-12 g-col-lg-8 mt-8">
-                    <div class="intro-y d-block d-sm-flex align-items-center h-10">
-                        <h2 class="fs-lg fw-medium truncate me-5">
-                            Sales Report
-                        </h2>
-                        {{-- <div class="ms-sm-auto mt-3 mt-sm-0 position-relative text-gray-700 dark-text-gray-300">
-                        <i data-feather="calendar" class="w-4 h-4 z-10 position-absolute my-auto top-0 bottom-0 ms-3 start-0"></i>
-                        <input type="text" class="datepicker form-control w-sm-56 box border-white dark-border-dark-3 ps-10">
-                    </div> --}}
-                    </div>
-                    <div class="intro-y box p-5 mt-12 mt-sm-5">
-                        <div class="d-flex flex-column flex-xl-row align-items-xl-center">
-                            <div class="d-flex">
-                                <div>
-                                    <div class="text-theme-12 dark-text-gray-300 fs-lg fs-xl-xl fw-medium">Rp.
-                                        {{ number_format($trx_now, 0, ',', '.') }}</div>
-                                    <div class="mt-0.5 text-gray-600 dark-text-gray-600">Bulan ini</div>
-                                </div>
-                                <div
-                                    class="w-px h-12 border border-end border-dashed border-gray-300 dark-border-dark-5 mx-4 mx-xl-5">
-                                </div>
-                                <div>
-                                    <div class="text-gray-600 dark-text-gray-600 fs-lg fs-xl-xl fw-medium">Rp.
-                                        {{ number_format($tahun, 0, ',', '.') }}</div>
-                                    <div class="mt-0.5 text-gray-600 dark-text-gray-600">Tahun ini</div>
-                                </div>
-                            </div>
-                            <div class="dropdown ms-xl-auto mt-5 mt-xl-0">
-                                <button class="btn btn-primary w-25 me-8 mb-4" data-bs-toggle="modal"
-                                    data-bs-target="#modal-harian" id="harian"> <i data-feather="list"
-                                        class="w-4 h-4 me-2"></i> Pendapatan Harian</button>
-                                <button class="btn btn-primary w-25 me-8 mb-4" data-bs-toggle="modal"
-                                    data-bs-target="#modal-rincian" id="rincian"> <i data-feather="list"
-                                        class="w-4 h-4 me-2"></i> Pendapatan Bulanan</button>
-                                {{-- <button class="btn btn-primary w-25 me-8 mb-4" data-bs-toggle="modal"
-                                    data-bs-target="#modal-pemasukan" id="pemasukan"> <i data-feather="list"
-                                        class="w-4 h-4 me-2"></i> Pemasukan Lainnya </button>
-                                <button class="btn btn-primary w-25 me-8 mb-4" data-bs-toggle="modal"
-                                    data-bs-target="#modal-pengeluaran" id="pengeluaran"> <i data-feather="list"
-                                        class="w-4 h-4 me-2"></i> Pengeluaran </button> --}}
-                            </div>
-                        </div>
-                        <div class="report-chart">
-                            <canvas id="line-sales" height="169" class="mt-7"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <!-- END: Sales Report -->
-                <!-- BEGIN: Weekly Best Sellers -->
-                <div class="g-col-12 g-col-xl-4 mt-6">
-                    <div class="intro-y d-flex align-items-center h-10">
-                        <h2 class="fs-lg fw-medium truncate me-5">
-                            Booking Terbaru
-                        </h2>
-                    </div>
-                    <div class="mt-5">
-                        @foreach ($booking_t as $b)
-                            <div class="intro-y">
-                                <div class="box px-4 py-4 mb-3 d-flex align-items-center zoom-in">
-                                    <div class="w-9 h-12 flex-none image-fit rounded-2 overflow-hidden">
-                                        <img alt="Pelanggan Mingguan Terbaik"
-                                            src="{{ asset('office/dist/images/mendali-mobil.png') }}">
-                                    </div>
-                                    <div class="ms-4 me-auto">
-                                        <div class="fw-medium">{{ $b->no_pol_kendaraan }}</div>
-                                        <div class="text-gray-600 fs-xs mt-0.5">
-                                            {{ date('d-m-Y H:i', strtotime($b->created_at)) }}</div>
-                                    </div>
-                                    <div
-                                        class="py-1 px-2 rounded-pill fs-xs bg-theme-12 text-black cursor-pointer fw-medium">
-                                        {{ $b->description }}</div>
-                                </div>
-                            </div>
-                        @endforeach
-                        <a href="{{ route('admin.booking') }}"
-                            class="intro-y w-full d-block text-center rounded-2 py-4 border border-dotted border-theme-15 dark-border-dark-5 text-theme-16 dark-text-gray-600"
-                            id="booking">Lihat lebih banyak</a>
-                    </div>
-                </div>
-
+    <div class="grid columns-12 gap-6 mb-20">
+        <div class="g-col-12">
+            <div class="intro-y d-flex align-items-center mt-8">
+                <h2 class="fs-2xl fw-bold truncate me-5">
+                    Ringkasan Bisnis
+                </h2>
+                <button onclick="window.location.reload()" class="ms-auto btn btn-primary shadow-md d-flex align-items-center">
+                    <i data-feather="refresh-ccw" class="w-4 h-4 me-2"></i> Segarkan Data
+                </button>
             </div>
         </div>
-        <div class="g-col-12 g-col-xxl-3">
-            <div class="border-start-xxl border-theme-5 dark-border-dark-3 mb-n10 pb-10">
-                <div class="ps-xxl-6 grid grid-cols-12 gap-6">
-                    <!-- BEGIN: Transactions -->
-                    <div class="g-col-12 g-col-md-6 g-col-xl-4 g-col-xxl-12 mt-3 mt-xxl-8">
-                        <div class="intro-x d-flex align-items-center h-10">
-                            <h2 class="fs-lg fw-medium truncate me-5">
-                                Transaksi Terbaru
-                            </h2>
-                        </div>
-                        <div class="mt-5">
-                            @foreach ($transaksi as $trx)
-                                <div class="intro-x">
-                                    <div class="box px-5 py-3 mb-3 d-flex align-items-center zoom-in">
-                                        <div class="w-10 h-10 flex-none image-fit rounded-circle overflow-hidden">
-                                            <img alt="Rubick Bootstrap HTML Admin Template"
-                                                src="{{ asset('office/dist/images/price-rp.png') }}">
-                                        </div>
-                                        <div class="ms-4 me-auto">
-                                            <div class="fw-medium">{{ $trx->no_pol_kendaraan }}</div>
-                                            <div class="text-gray-600 fs-xs mt-0.5">
-                                                {{ date('d-m-Y H:i', strtotime($trx->created_at)) }}</div>
-                                        </div>
-                                        <div class="fw-medium">Rp.
-                                            {{ number_format($trx->total, 0, ',', '.') }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
 
-                            <a href="{{ route('admin.transaksi') }}"
-                                class="intro-x w-full d-block text-center rounded-2 py-3 border border-dotted border-theme-15 dark-border-dark-5 text-theme-16 dark-text-gray-600">Lihat
-                                lebih banyak</a>
+        <!-- Metrics Cards -->
+        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
+            <div class="report-box">
+                <div class="box p-5 shadow-sm">
+                    <div class="d-flex align-items-center">
+                        <div class="report-box__icon text-theme-10 bg-theme-1/10 p-3 rounded-2">
+                            <i data-feather="shopping-cart" class="w-8 h-8"></i>
+                        </div>
+                        <div class="ms-auto text-end">
+                            <div class="report-box__total fs-3xl fw-bold text-dark">
+                                {{ number_format($stats['booking_month'], 0, ',', '.') }}
+                            </div>
+                            <div class="fs-sm text-gray-500 mt-1">Pesanan Bulan Ini</div>
                         </div>
                     </div>
-                    <!-- END: Transactions -->
-                    <!-- BEGIN: Recent Activities -->
-                    <div class="g-col-12 g-col-md-6 g-col-xl-4 g-col-xxl-12 mt-3">
-                        <div class="intro-x d-flex align-items-center h-10">
-                            <h2 class="fs-lg fw-medium truncate me-5">
-                                Aktivitas Terbaru
-                            </h2>
-                        </div>
-                        <div class="report-timeline mt-5 position-relative">
-                            @foreach ($histori as $item)
-                                <div class="intro-x position-relative d-flex align-items-center mb-3">
-                                    <div class="report-timeline__image">
-                                        <div class="w-10 h-10 flex-none image-fit rounded-circle overflow-hidden">
-                                            <img alt="Rubick Bootstrap HTML Admin Template"
-                                                src="{{ asset('office/dist/images/logo-mobil.png') }}">
-                                        </div>
-                                    </div>
-                                    <div class="box px-5 py-3 ms-4 flex-1 zoom-in">
-                                        <div class="d-flex align-items-center">
-                                            <div class="fw-medium">{{ $item->booking->no_pol_kendaraan }}</div>
-                                            <div class="fs-xs text-gray-500 ms-auto">
-                                                {{ date('d-m-Y H:i', strtotime($item->created_at)) }}</div>
-                                        </div>
-                                        <div class="text-gray-600 mt-1">{{ $item->histori }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
-
-                            <a href="{{ route('admin.histori') }}"
-                                class="intro-x w-full d-block text-center rounded-2 py-3 border border-dotted border-theme-15 dark-border-dark-5 text-theme-16 dark-text-gray-600">Lihat
-                                lebih banyak</a>
-                        </div>
-                    </div>
-                    <!-- END: Recent Activities -->
-
-                    <!-- END: Important Notes -->
-
                 </div>
+            </div>
+        </div>
+        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
+            <div class="report-box">
+                <div class="box p-5 shadow-sm">
+                    <div class="d-flex align-items-center">
+                        <div class="report-box__icon text-warning bg-warning/10 p-3 rounded-2">
+                            <i data-feather="user-check" class="w-8 h-8"></i>
+                        </div>
+                        <div class="ms-auto text-end">
+                            <div class="report-box__total fs-3xl fw-bold text-dark">
+                                {{ number_format($stats['visits_month'], 0, ',', '.') }}
+                            </div>
+                            <div class="fs-sm text-gray-500 mt-1">Selesai Bulan Ini</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
+            <div class="report-box">
+                <div class="box p-5 shadow-sm">
+                    <div class="d-flex align-items-center">
+                        <div class="report-box__icon text-success bg-success/10 p-3 rounded-2">
+                            <i data-feather="credit-card" class="w-8 h-8"></i>
+                        </div>
+                        <div class="ms-auto text-end">
+                            <div class="report-box__total fs-xl fw-bold text-dark">
+                                Rp {{ number_format($stats['revenue_month'], 0, ',', '.') }}
+                            </div>
+                            <div class="fs-sm text-gray-500 mt-1">Omzet Bulan Ini</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="g-col-12 g-col-sm-6 g-col-xl-3 intro-y">
+            <div class="report-box">
+                <div class="box p-5 shadow-sm">
+                    <div class="d-flex align-items-center">
+                        <div class="report-box__icon text-primary bg-theme-1/10 p-3 rounded-2">
+                            <i data-feather="trending-up" class="w-8 h-8"></i>
+                        </div>
+                        <div class="ms-auto text-end">
+                            <div class="report-box__total fs-xl fw-bold text-dark">
+                                Rp {{ number_format($stats['revenue_year'], 0, ',', '.') }}
+                            </div>
+                            <div class="fs-sm text-gray-500 mt-1">Omzet Tahun Ini</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="g-col-12 g-col-lg-8 mt-6 intro-y">
+            <div class="box p-5 h-full shadow-sm">
+                <div class="d-flex align-items-center mb-5">
+                    <h2 class="fw-bold fs-lg me-auto">Analisis Keuangan & Penjualan</h2>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm d-none d-md-inline-block" data-bs-toggle="modal" data-bs-target="#modal-harian">Detail Harian</button>
+                        <button class="btn btn-outline-secondary btn-sm d-none d-md-inline-block" data-bs-toggle="modal" data-bs-target="#modal-rincian">Detail Bulanan</button>
+                        
+                        <!-- Mobile Icons -->
+                        <button class="btn btn-success btn-sm d-md-none text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-harian" title="Detail Harian">
+                            <i data-feather="calendar" class="w-4 h-4"></i>
+                        </button>
+                        <button class="btn btn-primary btn-sm d-md-none text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-rincian" title="Detail Bulanan">
+                            <i data-feather="bar-chart-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="report-chart">
+                    <div id="main-sales-chart" style="min-height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity & Feed -->
+        <div class="g-col-12 g-col-lg-4 mt-6 intro-y">
+            <div class="box p-5 h-full d-flex flex-column">
+                <h2 class="fw-bold fs-lg mb-5">Pesanan Terbaru</h2>
+                <div class="report-timeline position-relative flex-1">
+                    @foreach ($recent['bookings'] as $b)
+                        <div class="intro-x d-flex align-items-center mb-4">
+                            <div class="w-10 h-10 flex-none image-fit rounded-circle overflow-hidden bg-gray-100 p-2">
+                                <i data-feather="calendar" class="w-full h-full text-warning"></i>
+                            </div>
+                            <div class="ms-4 me-auto">
+                                <div class="fw-bold">{{ $b->no_pol_kendaraan }}</div>
+                                <div class="text-gray-500 fs-xs mt-0.5">{{ $b->created_at->diffForHumans() }}</div>
+                            </div>
+                            <span class="badge bg-warning/20 text-warning rounded-pill px-3">{{ $b->status }}</span>
+                        </div>
+                    @endforeach
+                </div>
+                <a href="{{ route('admin.booking') }}" class="btn btn-outline-secondary w-full border-dotted mt-4">Lihat Semua Pesanan</a>
+            </div>
+        </div>
+
+        <!-- Secondary Feed -->
+        <div class="g-col-12 g-col-lg-6 mt-6 intro-y">
+            <div class="box p-5 h-full d-flex flex-column">
+                <h2 class="fw-bold fs-lg mb-5">Transaksi Terakhir</h2>
+                <div class="grid grid-cols-1 gap-4 flex-1">
+                    @foreach ($recent['transactions'] as $trx)
+                        <div class="d-flex align-items-center p-3 rounded-2 hover-bg-gray-100 transition-all border border-gray-100">
+                            <div class="w-12 h-12 flex-none bg-success/10 rounded-2 d-flex align-items-center justify-content-center">
+                                <i data-feather="wallet" class="text-success"></i>
+                            </div>
+                            <div class="ms-4">
+                                <div class="fw-bold text-dark">{{ $trx->no_pol_kendaraan }}</div>
+                                <div class="text-gray-500 fs-xs">{{ $trx->created_at->format('d M Y H:i') }}</div>
+                            </div>
+                            <div class="ms-auto text-end">
+                                <div class="fw-bold text-success">Rp {{ number_format($trx->total, 0, ',', '.') }}</div>
+                                <div class="text-gray-400 fs-xs">{{ $trx->metode_pembayaran }}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <a href="{{ route('admin.transaksi') }}" class="btn btn-outline-secondary w-full border-dotted mt-5">Riwayat Transaksi</a>
+            </div>
+        </div>
+
+        <div class="g-col-12 g-col-lg-6 mt-6 intro-y">
+            <div class="box p-5 h-full d-flex flex-column">
+                <h2 class="fw-bold fs-lg mb-5">Aktivitas Terkini</h2>
+                <div class="report-timeline relative flex-1">
+                    @foreach ($recent['activities'] as $item)
+                        <div class="intro-x relative d-flex align-items-center mb-5">
+                            <div class="report-timeline__image">
+                                <div class="w-10 h-10 flex-none bg-primary/10 rounded-full d-flex align-items-center justify-content-center">
+                                    <i data-feather="activity" class="text-primary w-5 h-5"></i>
+                                </div>
+                            </div>
+                            <div class="box px-5 py-3 ms-4 flex-1 zoom-in">
+                                <div class="d-flex align-items-center">
+                                    <div class="fw-bold">{{ $item->booking->no_pol_kendaraan }}</div>
+                                    <div class="fs-xs text-gray-500 ms-auto">{{ $item->created_at->diffForHumans() }}</div>
+                                </div>
+                                <div class="text-gray-600 mt-1 small">{{ $item->histori }}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <a href="{{ route('admin.histori') }}" class="btn btn-outline-secondary w-full border-dotted mt-2">Log Seluruh Aktivitas</a>
             </div>
         </div>
     </div>
-    <div class="modal fade" id="modal-harian" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="staticBackdropLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title" id="staticBackdropLabel">Rincian Harian Bulan {{ date('M Y') }}</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <table class="table-responsive table-bordered" width="100%" cellspacing="0">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Tanggal</th>
-                                <th class="text-nowrap">Pemasukan</th>
-                                <th class="text-nowrap">Pemasukan Lainnya</th>
-                                <th class="text-nowrap">Pengeluaran</th>
-                                <th class="text-nowrap">Total Bersih</th>
-                            </tr>
-                        </thead>
-                        <tbody>
 
-                            @foreach ($date as $val)
-                                <tr>
-                                    <td>{{ $val['tanggal'] }}</td>
-                                    <td><a style="color: rgb(104, 74, 18)"
-                                            href="{{ route('trx-tanggal', $val['tanggal']) }}">{{ number_format($val['trx_tanggal'], 0, ',', '.') }}</a>
-                                    </td>
-                                    <td><a href="">{{ number_format($val['pemasukan'], 0, ',', '.') }}</a></td>
-                                    <td><a href="">{{ number_format($val['pengeluaran'], 0, ',', '.') }}</a></td>
-                                    <td>{{ number_format($val['trx_tanggal'] + $val['pemasukan'] - $val['pengeluaran'], 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                            @endforeach
+    <!-- Modals (Simplified versions of existing ones) -->
+    @include('admin.partials.dashboard_modals')
 
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="modal-rincian" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="staticBackdropLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title" id="staticBackdropLabel">Rincian Bulanan Tahun {{ date('Y') }}</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <table class="table-responsive table-bordered" width="100%" cellspacing="0">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Bulan</th>
-                                <th class="text-nowrap">Pemasukan</th>
-                                <th class="text-nowrap">Pemasukan Lainnya</th>
-                                <th class="text-nowrap">Pengeluaran</th>
-                                <th class="text-nowrap">Total Bersih</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                            @foreach ($data as $item)
-                                <tr>
-                                    <td>{{ $item['bulan'] }}</td>
-                                    <td>{{ number_format($item['pemasukan'], 0, ',', '.') }}</td>
-                                    <td>{{ number_format($item['pemasukan_lainnya'], 0, ',', '.') }}</td>
-                                    <td>{{ number_format($item['pengeluaran'], 0, ',', '.') }}</td>
-                                    <td>{{ number_format($item['pemasukan'] + $item['pemasukan_lainnya'] - $item['pengeluaran'], 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                            @endforeach
-
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="modal-pengeluaran" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="staticBackdropLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title" id="staticBackdropLabel">Pengeluaran Tahun {{ date('Y') }}</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <table class="table table-bordered" width="100%" cellspacing="0" id="tabel-pengeluaran">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap" style="width: 5%">No</th>
-                                <th class="text-nowrap">Keterangan</th>
-                                <th class="text-nowrap">Jumlah</th>
-                                <th class="text-nowrap">Tanggal</th>
-                                <th class="text-nowrap">Foto Bukti</th>
-                            </tr>
-                        </thead>
-
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="modal-pemasukan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="staticBackdropLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title" id="staticBackdropLabel">Pemasukan Lainnya Tahun {{ date('Y') }}</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <table class="table table-bordered" width="100%" cellspacing="0" id="tabel-pemasukan">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap" style="width: 5%">No</th>
-                                <th class="text-nowrap">Keterangan</th>
-                                <th class="text-nowrap">Jumlah</th>
-                                <th class="text-nowrap">Tanggal</th>
-                                <th class="text-nowrap">Foto Bukti</th>
-                            </tr>
-                        </thead>
-
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
 @endsection
+
 @section('css')
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.css">
+    <style>
+        .report-box:before {
+            content: "";
+            width: 90%;
+            background: rgba(var(--color-theme-1), .05);
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: .75rem;
+            border-radius: .75rem;
+        }
+        .hover-bg-gray-100:hover {
+            background-color: rgba(0,0,0,0.02);
+        }
+
+        /* Force remove all header borders */
+        .box h2, .box .d-flex.border-bottom {
+            border-bottom: none !important;
+        }
+
+        /* Remove vertical timeline line */
+        .report-timeline:before {
+            display: none !important;
+        }
+
+        /* Fix for footer line and bottom spacing */
+        .content {
+            border: none !important;
+            box-shadow: none !important;
+            padding-bottom: 50px !important;
+        }
+
+        /* FIX: Prevent chart clipping/blur at edges */
+        #main-sales-chart, #main-sales-chart svg {
+            overflow: visible !important;
+        }
+        .apexcharts-canvas {
+            margin: 0 auto;
+        }
+    </style>
 @endsection
+
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
-        crossorigin="anonymous"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
-        const ctx = document.getElementById('line-sales').getContext('2d');
-        const myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: @php
-                    echo json_encode($labels);
-                @endphp,
-                datasets: [{
-                    label: '',
-                    data: {{ json_encode($jumlah_trx_bln, JSON_NUMERIC_CHECK) }},
-                    backgroundColor: [
-                        'rgb(255,215,0)'
-                    ],
-                    borderColor: [
-                        'rgb(255,215,0)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+        $(document).ready(function() {
+            const chartData = @json($chartData);
+            
+            if (chartData && chartData.length > 0) {
+                const options = {
+                    series: [{
+                        name: 'Omzet',
+                        data: chartData.map(d => d.revenue)
+                    }, {
+                        name: 'Pemasukan Lain',
+                        data: chartData.map(d => d.other_income)
+                    }, {
+                        name: 'Pengeluaran',
+                        data: chartData.map(d => d.expense)
+                    }, {
+                        name: 'Belum Dibayar',
+                        data: chartData.map(d => d.unpaid)
+                    }, {
+                        name: 'Laba Bersih',
+                        data: chartData.map(d => d.net)
+                    }],
+                    chart: {
+                        type: 'area',
+                        height: 350,
+                        toolbar: { show: false },
+                        fontFamily: 'Poppins, sans-serif',
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800
+                        }
+                    },
+                    grid: {
+                        borderColor: '#f1f5f9',
+                        strokeDashArray: 4,
+                        padding: {
+                            left: 15,
+                            right: 25,
+                            top: 0,
+                            bottom: 0
+                        }
+                    },
+                    colors: ['#f59e0b', '#8b5cf6', '#ef4444', '#3b82f6', '#10b981'],
+                    fill: {
+                        type: 'solid',
+                        opacity: 0.1
+                    },
+                    dataLabels: { enabled: false },
+                    stroke: { 
+                        curve: 'smooth', 
+                        width: 3,
+                        lineCap: 'round'
+                    },
+                    markers: {
+                        size: 5,
+                        colors: ['#f59e0b', '#ef4444', '#3b82f6', '#10b981'],
+                        strokeColors: '#fff',
+                        strokeWidth: 2,
+                        hover: { size: 7 }
+                    },
+                    xaxis: {
+                        categories: chartData.map(d => d.month),
+                        axisBorder: { show: false },
+                        axisTicks: { show: false },
+                        crosshairs: { show: true },
+                        labels: {
+                            trim: false, // Prevent cutting off month names
+                            style: {
+                                colors: '#64748b',
+                                fontSize: '11px'
+                            }
+                        }
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: function (val) {
+                                return val >= 1000000 ? (val / 1000000).toFixed(1) + ' jt' : val.toLocaleString('id-ID');
+                            }
+                        }
+                    },
+                    tooltip: {
+                        theme: 'light',
+                        shared: true,
+                        intersect: false,
+                        y: {
+                            formatter: function (val) {
+                                return "Rp " + val.toLocaleString('id-ID');
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'center', // Centered to prevent edge clipping
+                        offsetY: -10,
+                        itemMargin: {
+                            horizontal: 15,
+                            vertical: 5
+                        },
+                        labels: {
+                            colors: '#64748b'
+                        }
                     }
-                }
+                };
+
+                const chart = new ApexCharts(document.querySelector("#main-sales-chart"), options);
+                chart.render();
+            }
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
             }
         });
-        $('#pengeluaran').on('click', function() {
-            $('#tabel-pengeluaran').DataTable({
-                responsive: true,
-                processing: true,
-                serverSide: true,
-                destroy: true,
-                ajax: "{{ route('admin.pengeluaran') }}",
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1
-                        }
-                    },
-                    {
-                        data: 'name',
-                        name: 'name'
-                    },
-                    {
-                        data: 'jumlah',
-                        name: 'jumlah'
-                    },
-                    {
-                        data: 'created_at',
-                        name: 'created_at'
-                    },
-                    {
-                        data: 'foto',
-                        name: 'foto'
-                    }
-                ]
-            })
-        })
-
-        $('#pemasukan').on('click', function() {
-            $('#tabel-pemasukan').DataTable({
-                responsive: true,
-                processing: true,
-                serverSide: true,
-                destroy: true,
-                ajax: "{{ route('pemasukan.index') }}",
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1
-                        }
-                    },
-                    {
-                        data: 'name',
-                        name: 'name'
-                    },
-                    {
-                        data: 'jumlah',
-                        name: 'jumlah'
-                    },
-                    {
-                        data: 'created_at',
-                        name: 'created_at'
-                    },
-                    {
-                        data: 'foto',
-                        name: 'foto'
-                    }
-                ]
-            })
-        })
     </script>
 @endsection

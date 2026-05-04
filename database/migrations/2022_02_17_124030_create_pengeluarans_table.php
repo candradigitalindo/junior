@@ -17,6 +17,7 @@ class CreatePengeluaransTable extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->bigInteger('jumlah')->default(0);
+            $table->string('foto')->nullable();
             $table->timestamps();
         });
     }

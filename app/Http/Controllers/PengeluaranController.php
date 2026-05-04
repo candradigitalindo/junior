@@ -6,40 +6,28 @@ use App\Models\Pengeluaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Validator;
+use Intervention\Image\Facades\Image;
 
 class PengeluaranController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pengeluaran = Pengeluaran::whereYear('created_at', date('Y'))->orderBy('created_at', 'DESC')->get();
+        $start = $request->start_date ?: date('Y-m-d');
+        $end = $request->end_date ?: date('Y-m-d');
+
         if (request()->ajax()) {
-            return datatables()->of($pengeluaran)
-                ->addColumn('aksi', function ($pengeluaran) {
-
-                    $button = "<div class='d-flex justify-content-center align-items-center'>
-                <button class='edit btn btn-elevated-warning w-24 me-1 mb-2' id=" . $pengeluaran->id . ">Edit</button>
-                <button class='delete btn btn-elevated-danger w-24 me-1 mb-2' id=" . $pengeluaran->id . ">Hapus</button>
-                </div>";
-
-                    return $button;
+            $query = Pengeluaran::query()
+                ->whereDate('created_at', '>=', $start)
+                ->whereDate('created_at', '<=', $end)
+                ->orderBy('created_at', 'DESC');
+            
+            $totalSum = (clone $query)->sum('jumlah') ?: 0;
+            
+            return datatables()->of($query)
+                ->editColumn('created_at', function ($p) {
+                    return $p->created_at->format('Y-m-d H:i:s');
                 })
-                ->editColumn('name', function ($pengeluaran) {
-                    $name = '<a href="#" class="fw-medium text-nowrap">' . $pengeluaran->name . '</a>';
-                    return $name;
-                })
-                ->editColumn('jumlah', function ($pengeluaran) {
-                    $jumlah = '<a href="#" class="fw-medium text-nowrap">' . number_format($pengeluaran->jumlah, 0, ',', '.') . '</a>';
-                    return $jumlah;
-                })
-                ->editColumn('created_at', function ($pengeluaran) {
-                    $tgl = '<a href="#" class="fw-medium text-nowrap">' . date('d M Y H:i', strtotime($pengeluaran->created_at)) . '</a>';
-                    return $tgl;
-                })
-                ->editColumn('foto', function ($pengeluaran) {
-                    $foto = '<img src="' . asset('storage/bukti-pengeluaran/' . $pengeluaran->foto) . '" style="width: 100px" style="height: 100px"/>';
-                    return $foto;
-                })
-                ->rawColumns(['aksi', 'jumlah', 'name', 'created_at', 'foto'])
+                ->with('totalSum', $totalSum)
                 ->make(true);
         }
         return view('kasir.pengeluaran');
@@ -49,30 +37,36 @@ class PengeluaranController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name'              => 'required|string',
-            'jumlah'            => 'required|string',
-            'foto_pengeluaran'  => 'required|image'
+            'jumlah'            => 'required|numeric',
+            'foto_pengeluaran'  => 'required|image|max:10240'
         ], [
-            'name.required'     => 'Isi kolom keterangan',
-            'jumlah.required'   => 'Isi jumlah pengeluaran',
-            'foto_pengeluaran.required' => 'Foto Bukti Pengeluaran'
+            'name.required'             => 'Isi kolom keterangan',
+            'jumlah.required'           => 'Isi jumlah pengeluaran',
+            'foto_pengeluaran.required' => 'Foto Bukti Pengeluaran',
+            'foto_pengeluaran.max'      => 'Ukuran file maksimal 10MB'
         ]);
 
         if ($validator->passes()) {
-            if ($request->foto_pengeluaran) {
-                $img = $request->file('foto_pengeluaran');
-                $img->storeAs('public/bukti-pengeluaran', $img->hashName());
-                $pengeluaran = Pengeluaran::create([
-                    'name'  => ucwords($request->name),
-                    'jumlah' => $request->jumlah,
-                    'foto'  => $img->hashName()
-                ]);
+            $file = $request->file('foto_pengeluaran');
+            $fileName = $file->hashName();
+            
+            // Image Processing
+            $img = Image::make($file->path());
+            $img->resize(1000, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
 
-                return response()->json(['text' => 'Pengeluaran ' . $pengeluaran->name . ' berhasil ditambahkan']);
+            if (!Storage::disk('public')->exists('bukti-pengeluaran')) {
+                Storage::disk('public')->makeDirectory('bukti-pengeluaran');
             }
+
+            $img->save(storage_path('app/public/bukti-pengeluaran/' . $fileName), 85);
 
             $pengeluaran = Pengeluaran::create([
                 'name'  => ucwords($request->name),
-                'jumlah' => $request->jumlah
+                'jumlah' => $request->jumlah,
+                'foto'  => $fileName
             ]);
 
             return response()->json(['text' => 'Pengeluaran ' . $pengeluaran->name . ' berhasil ditambahkan']);
@@ -88,37 +82,44 @@ class PengeluaranController extends Controller
 
     public function update(Request $request, $id)
     {
-
         $validator = Validator::make($request->all(), [
             'editname'              => 'required|string',
-            'editjumlah'            => 'required|string',
-            'editfoto_pengeluaran'  => 'nullable|image'
+            'editjumlah'            => 'required|numeric',
+            'editfoto_pengeluaran'  => 'nullable|image|max:10240'
         ], [
-            'editname.required'     => 'Isi kolom keterangan',
-            'editjumlah.required'   => 'Isi jumlah pengeluaran',
-            'editfoto_pengeluaran.required' => 'Foto Bukti Pengeluaran'
+            'editname.required'             => 'Isi kolom keterangan',
+            'editjumlah.required'           => 'Isi jumlah pengeluaran',
+            'editfoto_pengeluaran.max'      => 'Ukuran file maksimal 10MB'
         ]);
 
         if ($validator->passes()) {
             $pengeluaran = Pengeluaran::find($id);
-            if ($request->editfoto_pengeluaran) {
-                if ($pengeluaran->foto != null) {
-                    Storage::disk('local')->delete('public/bukti-pengeluaran/' . $pengeluaran->foto);
+            $updateData = [
+                'name'  => ucwords($request->editname),
+                'jumlah' => $request->editjumlah,
+            ];
+
+            if ($request->hasFile('editfoto_pengeluaran')) {
+                // Delete old photo
+                if ($pengeluaran->foto && Storage::disk('public')->exists('bukti-pengeluaran/' . $pengeluaran->foto)) {
+                    Storage::disk('public')->delete('bukti-pengeluaran/' . $pengeluaran->foto);
                 }
-                $img = $request->file('editfoto_pengeluaran');
-                $img->storeAs('public/bukti-pengeluaran', $img->hashName());
-                $pengeluaran->update([
-                    'name'  => ucwords($request->editname),
-                    'jumlah' => $request->editjumlah,
-                    'foto'  => $img->hashName()
-                ]);
-                return response()->json(['text' => 'Pengeluaran ' . $pengeluaran->name . ' berhasil diubah']);
+
+                $file = $request->file('editfoto_pengeluaran');
+                $fileName = $file->hashName();
+                
+                // Image Processing
+                $img = Image::make($file->path());
+                $img->resize(1000, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+
+                $img->save(storage_path('app/public/bukti-pengeluaran/' . $fileName), 85);
+                $updateData['foto'] = $fileName;
             }
 
-            $pengeluaran->update([
-                'name'  => ucwords($request->editname),
-                'jumlah' => $request->editjumlah
-            ]);
+            $pengeluaran->update($updateData);
 
             return response()->json(['text' => 'Pengeluaran ' . $pengeluaran->name . ' berhasil diubah']);
         }
@@ -129,7 +130,9 @@ class PengeluaranController extends Controller
     public function destroy($id)
     {
         $pengeluaran = Pengeluaran::find($id);
-        Storage::disk('local')->delete('public/bukti-pengeluaran/' . $pengeluaran->foto);
+        if ($pengeluaran->foto && Storage::disk('public')->exists('bukti-pengeluaran/' . $pengeluaran->foto)) {
+            Storage::disk('public')->delete('bukti-pengeluaran/' . $pengeluaran->foto);
+        }
         $pengeluaran->delete();
         return response()->json(['text' => 'Pengeluaran ' . $pengeluaran->name . ' berhasil dihapus']);
     }

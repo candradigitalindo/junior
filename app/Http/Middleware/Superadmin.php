@@ -17,10 +17,10 @@ class Superadmin
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role->role == 'Superadmin') {
+        if (Auth::check() && strtolower(Auth::user()->role->role) == 'superadmin') {
             return $next($request);
         }
 
-        return back();
+        return redirect(route('home'));
     }
 }

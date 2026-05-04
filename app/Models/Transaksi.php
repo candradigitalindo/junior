@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Transaksi extends Model
 {
     use Uuids;
-    protected $fillable = ['booking_id', 'invoice', 'discount', 'total', 'metode_pembayaran', 'tgl_bayar', 'keterangan'];
+    protected $fillable = ['booking_id', 'invoice', 'no_pol_kendaraan', 'tipe_mobil', 'product_name', 'product_price', 'discount', 'total', 'metode_pembayaran', 'tgl_bayar', 'keterangan'];
 
     public function booking()
     {

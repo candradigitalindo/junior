@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ExtraserviceController;
 use App\Http\Controllers\Admin\FinanceController;
@@ -12,7 +13,7 @@ use App\Http\Controllers\GalryController;
 use App\Http\Controllers\GudangController;
 use App\Http\Controllers\HistoriController;
 use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\Karyawan\DashboardController;
+use App\Http\Controllers\Karyawan\DashboardController as KaryawanDashboardController;
 use App\Http\Controllers\KasirController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\ListingController;
@@ -62,7 +63,7 @@ Route::get('/tes', function () {
     $pesan = 'Halo,
 Semoga Anda selalu diberikan kesehatan dan Kebahagiaan.
 
-Kami dari *KILAT PREMIUM WASH* memberitahukan kendaraan :
+Kami dari *JUNIOR PREMIUM AUTO CARE* memberitahukan kendaraan :
 
         *No : BK0000RAB*
 
@@ -71,8 +72,8 @@ PENGERJAAN LAYANAN ANDA SUDAH SELESAI, Silahkan untuk melakukan pengambilan Kend
 Info lebih lanjut Telp/WhatsApp : *0821 6061 9089*
 ———————————————————-
 
-www.kilatpremiumwash.com
-@kilatpremiumwash';
+www.juniorwash.com
+@juniorwash';
 
     $curl = curl_init();
 
@@ -159,6 +160,7 @@ Route::get('/pengerjaan/{id}', [LoketController::class, 'pengerjaan'])->name('pe
 Route::post('/landingbooking/{id}', [LandingController::class, 'bookingorder'])->name('landing.bookingorder');
 
 Auth::routes(['reset' => false, 'register' => false, 'verify' => false]);
+Route::get('logout', [\App\Http\Controllers\Auth\LoginController::class, 'logout']);
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
@@ -184,7 +186,7 @@ Route::middleware(['auth'])->group(function () {
 
     //CEK MOBIL
     Route::post('/cekmasuk/{id}', [PengecekanController::class, 'cekmasuk'])->name('cekmasuk');
-    Route::get('/cekmasuk/{id}', [PengecekanController::class, 'qury_cekmasuk'])->name('qurycekmasuk');
+    Route::get('/cekmasuk/{id}', [PengecekanController::class, 'selesaiPengecekan'])->name('pengecekan.selesai');
     Route::post('/cekkeluar', [PengecekanController::class, 'cekkeluar'])->name('cekkeluar');
     Route::get('/photocek/{id}', [PengecekanController::class, 'show_photocek'])->name('photocek.index');
     Route::Post('/photocek/{id}', [PengecekanController::class, 'post_photo_cek'])->name('photocek.store');
@@ -253,7 +255,7 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::middleware(['superadmin'])->group(function () {
-        Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
+        Route::get('/admin', [DashboardController::class, 'index'])->name('admin.index');
         Route::get('/admin/reset/transaksi/{id}', [AdminController::class, 'reset_transaksi'])->name('admin.reset.transaksi');
         Route::get('/gudang', [GudangController::class, 'index'])->name('gudang.index');
     });
@@ -273,9 +275,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['kasir'])->group(function () {
         Route::get('/dashboard/kasir', [KasirController::class, 'dashboard'])->name('kasir.dashboard');
         Route::get('/kasir', [KasirController::class, 'index'])->name('kasir.index');
+        Route::get('/kasir/unpaid', [KasirController::class, 'unpaid_view'])->name('kasir.unpaid');
         Route::post('/filter', [KasirController::class, 'filter'])->name('kasir.filter');
     });
-
     Route::middleware(['gudang'])->group(function () {
         Route::get('/gudang', [GudangController::class, 'index'])->name('gudang.index');
         Route::get('/gudang/{id}/edit', [GudangController::class, 'edit'])->name('gudang.edit');
@@ -293,6 +295,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/gudang/histori/{id}', [GudangController::class, 'histori'])->name('gudang.histori');
 
         Route::get('/gudang/barcode', [GudangController::class, 'view_barcode'])->name('barcode.index');
+        Route::get('/barcode', [GudangController::class, 'view_barcode'])->name('barcode.form');
         Route::post('/barcode', [GudangController::class, 'post_barcode'])->name('barcode.post');
     });
 });

@@ -17,10 +17,10 @@ class Loket
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role->role == 'loket') {
+        if (Auth::check() && strtolower(Auth::user()->role->role) == 'loket') {
             return $next($request);
         }
 
-        return back();
+        return redirect(route('home'));
     }
 }
