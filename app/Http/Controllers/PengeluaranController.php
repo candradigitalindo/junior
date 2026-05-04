@@ -12,13 +12,18 @@ class PengeluaranController extends Controller
 {
     public function index(Request $request)
     {
-        $start = $request->start_date ?: date('Y-m-d');
-        $end = $request->end_date ?: date('Y-m-d');
+        $start = $request->start_date;
+        $end = $request->end_date;
 
         if (request()->ajax()) {
             $query = Pengeluaran::query()
-                ->whereDate('created_at', '>=', $start)
-                ->whereDate('created_at', '<=', $end)
+                ->when($start && $end, function ($q) use ($start, $end) {
+                    $q->whereDate('created_at', '>=', $start)
+                      ->whereDate('created_at', '<=', $end);
+                }, function ($q) {
+                    $q->whereMonth('created_at', now()->month)
+                      ->whereYear('created_at', now()->year);
+                })
                 ->orderBy('created_at', 'DESC');
             
             $totalSum = (clone $query)->sum('jumlah') ?: 0;

@@ -51,7 +51,7 @@
 <div class="intro-y loket-table-shell mt-5">
     <div class="loket-table-shell__header">
         <div>
-            <div class="loket-eyebrow">Booking Aktif Bulan Ini</div>
+            <div class="loket-eyebrow">Default: Hari Ini + Belum Bayar</div>
             <h3 class="loket-section-title">Daftar Kendaraan Masuk</h3>
         </div>
     </div>

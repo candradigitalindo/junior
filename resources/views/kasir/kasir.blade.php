@@ -651,6 +651,19 @@
                    date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         }
 
+        function toLocalDate(input) {
+            if (!input || !/^\d{4}-\d{2}-\d{2}$/.test(input)) return null;
+            const parts = input.split('-').map(Number);
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
+        function toYmd(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         $('.modal').on('shown.bs.modal', function() {
             if (typeof feather !== 'undefined') feather.replace();
             initSelect2($(this).find('select'));
@@ -672,6 +685,10 @@
                         start_date: start_date,
                         end_date: end_date
                     },
+                    error: function(xhr) {
+                        const message = xhr?.responseJSON?.message || 'Filter tanggal tidak valid.';
+                        swal('Akses Dibatasi', message, 'error');
+                    }
                 },
                 drawCallback: function(settings) {
                     if (typeof feather !== 'undefined') {
@@ -835,14 +852,25 @@
 
             // Robust 3 months limit check
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const limit = new Date(today);
+            const limit = new Date(today.getFullYear(), today.getMonth(), today.getDate());
             limit.setMonth(limit.getMonth() - 3);
+
+            const minAllowed = toYmd(limit);
             
-            const selected = new Date(start_date);
+            const selectedStart = toLocalDate(start_date);
+            const selectedEnd = toLocalDate(end_date);
+
+            if (!selectedStart || !selectedEnd) {
+                swal('Perhatian', 'Format tanggal tidak valid.', 'warning');
+                return;
+            }
+
+            if (selectedStart > selectedEnd) {
+                swal('Perhatian', 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.', 'warning');
+                return;
+            }
             
-            if (selected < limit) {
+            if (start_date < minAllowed || end_date < minAllowed) {
                 swal({
                     title: "Pembatasan Akses",
                     text: "Kasir hanya diperbolehkan melihat data maksimal 3 bulan terakhir.",

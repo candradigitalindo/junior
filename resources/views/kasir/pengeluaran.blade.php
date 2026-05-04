@@ -91,14 +91,14 @@
                 <label class="form-label small fw-bold text-muted">DARI TANGGAL</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i data-feather="calendar" class="w-4 h-4"></i></span>
-                    <input type="date" class="form-control border-start-0 ps-0" id="start_date" value="{{ date('Y-m-d') }}">
+                    <input type="date" class="form-control border-start-0 ps-0" id="start_date" value="{{ now()->startOfMonth()->format('Y-m-d') }}">
                 </div>
             </div>
             <div class="col-12 col-md-3 col-lg-2">
                 <label class="form-label small fw-bold text-muted">SAMPAI TANGGAL</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i data-feather="calendar" class="w-4 h-4"></i></span>
-                    <input type="date" class="form-control border-start-0 ps-0" id="end_date" value="{{ date('Y-m-d') }}">
+                    <input type="date" class="form-control border-start-0 ps-0" id="end_date" value="{{ now()->endOfMonth()->format('Y-m-d') }}">
                 </div>
             </div>
             <div class="col-12 col-md-auto">

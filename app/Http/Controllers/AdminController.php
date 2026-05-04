@@ -35,47 +35,75 @@ class AdminController extends Controller
     public function booking()
     {
         if (request()->ajax()) {
-            // Optimization: Eager load all relations and select only needed columns
-            $query = Booking::with(['bookingorder', 'photocek', 'histori', 'transaksi'])
-                ->orderBy('created_at', 'DESC');
+            $dateFrom = request('date_from');
+            $dateTo   = request('date_to');
+            $status   = request('status');
+
+            $query = Booking::query()
+                ->select('id', 'no_pol_kendaraan', 'name', 'tipe_mobil', 'phone', 'tgl_booking', 'waktu_booking', 'tgl_proses', 'tgl_selesai', 'description', 'status', 'status_pembayaran', 'photo_tipe_mobil', 'created_at')
+                ->with([
+                    'bookingorder' => fn($q) => $q->select('id', 'booking_id', 'product_name'),
+                    'photocek' => fn($q) => $q->select('id', 'booking_id'),
+                    'histori' => fn($q) => $q->select('id', 'booking_id'),
+                    'transaksi' => fn($q) => $q->select('id', 'booking_id')
+                ])
+                ->when($dateFrom, fn($q) => $q->whereDate('tgl_booking', '>=', $dateFrom))
+                ->when($dateTo,   fn($q) => $q->whereDate('tgl_booking', '<=', $dateTo))
+                ->when(!$dateFrom && !$dateTo, function($q) {
+                    $q->whereMonth('tgl_booking', now()->month)
+                      ->whereYear('tgl_booking', now()->year);
+                })
+                ->when($status,   fn($q) => $q->where('status', $status))
+                ->orderByDesc('created_at');
 
             return datatables()->of($query)
                 ->addColumn('aksi', function ($booking) {
-                    if (Auth::user()->role->role == 'Superadmin') {
-                        return '<div class="d-flex justify-content-center">
-                                    <button class="delete btn btn-sm btn-danger w-20" id="' . $booking->id . '">Hapus</button>
-                                </div>';
+                    if (Auth::user()->role->role === 'Superadmin') {
+                        return '<button class="delete btn btn-sm btn-outline-danger px-3 shadow-none" id="' . $booking->id . '">Hapus</button>';
                     }
+                    return '';
                 })
                 ->editColumn('no_pol_kendaraan', function ($booking) {
-                    return '<div class="fw-bold">' . $booking->no_pol_kendaraan . '</div><div class="text-gray-500 small">' . $booking->name . '</div>';
+                    return '<div class="fw-semibold text-dark">' . $booking->no_pol_kendaraan . '</div>'
+                        . '<div class="text-xs text-gray-500">' . $booking->name . '</div>';
                 })
                 ->editColumn('tgl_booking', function ($booking) {
                     $html = '<div class="text-xs">';
-                    $html .= '<div><strong>Booking:</strong> ' . date('d-m-Y H:i', strtotime($booking->tgl_booking . ' ' . $booking->waktu_booking)) . '</div>';
-                    if ($booking->tgl_proses) $html .= '<div><strong>Proses:</strong> ' . date('d-m-Y H:i', strtotime($booking->tgl_proses)) . '</div>';
-                    if ($booking->tgl_selesai) $html .= '<div><strong>Selesai:</strong> ' . date('d-m-Y H:i', strtotime($booking->tgl_selesai)) . '</div>';
+                    $html .= '<div><span class="text-gray-400">Book:</span> ' . date('d/m/Y', strtotime($booking->tgl_booking)) . ' ' . $booking->waktu_booking . '</div>';
+                    if ($booking->tgl_proses) $html .= '<div class="mt-1"><span class="text-gray-400">Proses:</span> ' . date('d/m/Y H:i', strtotime($booking->tgl_proses)) . '</div>';
                     $html .= '</div>';
                     return $html;
                 })
                 ->editColumn('description', function ($booking) {
-                    $btn = '<button class="orderan btn btn-xs btn-warning mb-1" id="' . $booking->id . '">Orderan Details</button>';
-                    return '<div>' . $btn . '</div><div class="text-xs text-gray-600">' . $booking->description . '</div>';
+                    $btn = '<button class="orderan btn btn-xs btn-soft-warning mb-2 w-full" id="' . $booking->id . '">Orderan Details</button>';
+                    $logs = $booking->histori->count() > 0 ? '<button class="pengerjaan btn btn-xs btn-outline-secondary w-full" id="' . $booking->id . '">View Logs</button>' : '';
+                    return '<div style="min-width: 120px;">' . $btn . $logs . '</div>';
                 })
                 ->editColumn('status', function ($booking) {
-                    $status = '<span class="badge bg-primary/10 text-primary rounded-pill px-2 py-1 mb-1">' . $booking->status . '</span>';
-                    $payStatus = '<br><span class="badge bg-' . ($booking->status_pembayaran == 'Sudah Bayar' ? 'success' : 'warning') . '/10 text-' . ($booking->status_pembayaran == 'Sudah Bayar' ? 'success' : 'warning') . ' rounded-pill px-2 py-1">' . ($booking->status_pembayaran ?: 'Belum Bayar') . '</span>';
+                    $statusColor = match($booking->status) {
+                        'Booking' => 'primary',
+                        'Proses' => 'warning',
+                        'Selesai' => 'success',
+                        default => 'secondary'
+                    };
                     
-                    $actions = '<div class="mt-2 d-flex gap-1">';
-                    if ($booking->photocek->count() > 0) $actions .= '<button class="upload btn btn-xs btn-outline-secondary" id="' . $booking->id . '">Photos</button>';
-                    if ($booking->histori->count() > 0) $actions .= '<button class="pengerjaan btn btn-xs btn-outline-secondary" id="' . $booking->id . '">Logs</button>';
-                    $actions .= '</div>';
+                    $payColor = $booking->status_pembayaran === 'Sudah Bayar' ? 'success' : 'warning';
                     
-                    return $status . $payStatus . $actions;
+                    $html = '<div class="mb-1"><span class="badge badge-soft-' . $statusColor . ' px-2 py-1 w-full text-center" style="font-size: 10px;">' . strtoupper($booking->status) . '</span></div>';
+                    $html .= '<div class="mb-2"><span class="badge badge-soft-' . $payColor . ' px-2 py-1 w-full text-center" style="font-size: 10px;">' . strtoupper($booking->status_pembayaran ?: 'BELUM BAYAR') . '</span></div>';
+                    
+                    if ($booking->photocek->count() > 0) {
+                        $html .= '<button class="upload btn btn-xs btn-outline-secondary w-full py-1" id="' . $booking->id . '">Photos</button>';
+                    }
+                    
+                    return '<div style="min-width: 100px;">' . $html . '</div>';
                 })
                 ->editColumn('tipe_mobil', function ($booking) {
                     $img = $booking->photo_tipe_mobil ? asset('storage/tipemobil/' . $booking->photo_tipe_mobil) : asset('image/no_photo_tipe_mobil.png');
-                    return '<center><img src="' . $img . '" style="width: 80px; border-radius: 8px;"/><div class="mt-1 small fw-medium">' . $booking->tipe_mobil . '</div></center>';
+                    return '<div class="d-flex align-items-center gap-3">
+                                <img src="' . $img . '" class="rounded border" style="width: 60px; height: 45px; object-fit: cover;"/>
+                                <div class="small fw-medium text-gray-700">' . $booking->tipe_mobil . '</div>
+                            </div>';
                 })
                 ->rawColumns(['aksi', 'no_pol_kendaraan', 'tgl_booking', 'description', 'status', 'tipe_mobil'])
                 ->make(true);
@@ -86,53 +114,102 @@ class AdminController extends Controller
     public function transaksi()
     {
         if (request()->ajax()) {
+            $dateFrom = request('date_from') ?: now()->subMonth()->toDateString();
+            $dateTo   = request('date_to') ?: now()->toDateString();
+            $metode   = request('metode');
+
             $query = Booking::where('status_pembayaran', 'Sudah Bayar')
                 ->with(['transaksi', 'bookingorder'])
-                ->orderBy('created_at', 'DESC');
+                ->whereHas('transaksi', function ($t) use ($dateFrom, $dateTo, $metode) {
+                    $t->whereDate('tgl_bayar', '>=', $dateFrom)
+                        ->whereDate('tgl_bayar', '<=', $dateTo);
+                    if ($metode) {
+                        $t->where('metode_pembayaran', $metode);
+                    }
+                })
+                ->orderByDesc('created_at');
 
             return datatables()->of($query)
                 ->addColumn('aksi', function ($booking) {
-                    if (Auth::user()->role->role == 'Superadmin') {
-                        return '<button type="button" class="reset btn btn-sm btn-dark w-full" id="' . $booking->id . '">Reset Transaksi</button>';
+                    if (Auth::user()->role->role === 'Superadmin') {
+                        return '<button type="button" class="reset btn btn-sm btn-outline-danger px-3" id="' . $booking->id . '">Reset</button>';
                     }
+                    return '';
                 })
                 ->editColumn('no_pol_kendaraan', function ($booking) {
-                    return '<div><strong>' . $booking->no_pol_kendaraan . '</strong></div><div class="text-xs">' . $booking->tipe_mobil . '</div><div class="text-xs text-gray-500">' . $booking->phone . '</div>';
+                    return '<div class="fw-semibold text-dark">' . $booking->no_pol_kendaraan . '</div>'
+                        . '<div class="text-xs text-gray-500">' . $booking->tipe_mobil . '</div>'
+                        . '<div class="text-xs text-gray-400">' . $booking->phone . '</div>';
                 })
                 ->editColumn('tgl_booking', function ($booking) {
-                    return '<div class="text-xs">
-                                <div><strong>Book:</strong> ' . date('d-m-Y', strtotime($booking->tgl_booking)) . '</div>
-                                <div><strong>Done:</strong> ' . ($booking->tgl_selesai ? date('d-m-Y H:i', strtotime($booking->tgl_selesai)) : '-') . '</div>
-                            </div>';
+                    $bayar = optional($booking->transaksi)->tgl_bayar
+                        ? date('d/m/Y H:i', strtotime($booking->transaksi->tgl_bayar))
+                        : '-';
+                    return '<div class="text-xs">'
+                        . '<div class="fw-medium">' . date('d/m/Y', strtotime($booking->tgl_booking)) . '</div>'
+                        . '<div class="text-gray-400 mt-1">Bayar: ' . $bayar . '</div>'
+                        . '</div>';
                 })
                 ->editColumn('description', function ($booking) {
                     $items = $booking->bookingorder->pluck('product_name')->implode(', ');
-                    $total = number_format($booking->transaksi->total ?? 0, 0, ',', '.');
-                    $disc = number_format($booking->transaksi->discount ?? 0, 0, ',', '.');
-                    return '<div class="text-xs">
-                                <div class="mb-1"><strong>Items:</strong> ' . $items . '</div>
-                                <div class="text-success fw-bold">Total: Rp ' . $total . '</div>
-                                <div class="text-gray-500">Disc: Rp ' . $disc . '</div>
-                            </div>';
-                })
-                ->editColumn('status', function ($booking) {
-                    return '<span class="badge bg-success/10 text-success rounded-pill">' . $booking->status_pembayaran . '</span>';
-                })
-                ->addColumn('transaksi', function ($booking) {
-                    if (!$booking->transaksi) return '-';
-                    $html = '<div class="text-xs">';
-                    $html .= '<div><strong>Inv:</strong> ' . $booking->transaksi->invoice . '</div>';
-                    $html .= '<div><strong>Metode:</strong> ' . $booking->transaksi->metode_pembayaran . '</div>';
-                    if ($booking->transaksi->keterangan) {
-                        $html .= '<div class="mt-1"><img src="' . asset('storage/bukti-pembayaran/' . $booking->transaksi->keterangan) . '" style="width: 40px; border-radius: 4px;"/></div>';
+                    $total = number_format(optional($booking->transaksi)->total ?? 0, 0, ',', '.');
+                    $disc  = optional($booking->transaksi)->discount ?? 0;
+                    $html  = '<div class="text-xs"><div class="text-gray-600 mb-1">' . $items . '</div>'
+                        . '<div class="fw-bold text-success">Rp ' . $total . '</div>';
+                    if ($disc > 0) {
+                        $html .= '<div class="text-gray-400">Diskon: Rp ' . number_format($disc, 0, ',', '.') . '</div>';
                     }
-                    $html .= '</div>';
-                    return $html;
+                    return $html . '</div>';
                 })
-                ->rawColumns(['aksi', 'no_pol_kendaraan', 'tgl_booking', 'description', 'status', 'transaksi'])
+                ->addColumn('transaksi_html', function ($booking) {
+                    if (!$booking->transaksi) return '<span class="text-gray-400">—</span>';
+                    $mp      = $booking->transaksi->metode_pembayaran ?? '';
+                    $mpLow   = strtolower($mp);
+                    $mpColor = str_contains($mpLow, 'cash') ? 'success' : (str_contains($mpLow, 'qris') ? 'warning' : 'primary');
+                    $html    = '<div class="text-xs">'
+                        . '<div class="text-gray-400 mb-1">' . $booking->transaksi->invoice . '</div>'
+                        . '<span class="badge bg-' . $mpColor . '/10 text-' . $mpColor . ' border border-' . $mpColor . '/20 rounded-pill px-2">' . strtoupper($mp) . '</span>';
+                    if ($booking->transaksi->keterangan) {
+                        $url   = asset('storage/bukti-pembayaran/' . $booking->transaksi->keterangan);
+                        $html .= '<div class="mt-1"><a href="' . $url . '" target="_blank" rel="noopener">'
+                            . '<img src="' . $url . '" class="rounded shadow-sm" style="width:32px;height:32px;object-fit:cover;"/>'
+                            . '</a></div>';
+                    }
+                    return $html . '</div>';
+                })
+                ->rawColumns(['aksi', 'no_pol_kendaraan', 'tgl_booking', 'description', 'transaksi_html'])
                 ->make(true);
         }
+
         return view('admin.transaksi');
+    }
+
+    public function transaksi_stats()
+    {
+        $dateFrom = request('date_from') ?: now()->subMonth()->toDateString();
+        $dateTo   = request('date_to') ?: now()->toDateString();
+        $metode   = request('metode');
+
+        $stats = Transaksi::query()
+            ->whereNotNull('tgl_bayar')
+            ->whereHas('booking', fn ($q) => $q->where('status_pembayaran', 'Sudah Bayar'))
+            ->whereDate('tgl_bayar', '>=', $dateFrom)
+            ->whereDate('tgl_bayar', '<=', $dateTo)
+            ->when($metode,   fn ($q) => $q->where('metode_pembayaran', $metode))
+            ->selectRaw("
+                COUNT(*) as count,
+                COALESCE(SUM(total), 0) as revenue,
+                COALESCE(SUM(CASE WHEN LOWER(metode_pembayaran) LIKE '%cash%' THEN total ELSE 0 END), 0) as cash,
+                COALESCE(SUM(CASE WHEN LOWER(metode_pembayaran) LIKE '%qris%' OR LOWER(metode_pembayaran) LIKE '%transfer%' THEN total ELSE 0 END), 0) as non_cash
+            ")
+            ->first();
+
+        return response()->json([
+            'count'    => (int) ($stats->count ?? 0),
+            'revenue'  => (float) ($stats->revenue ?? 0),
+            'cash'     => (float) ($stats->cash ?? 0),
+            'non_cash' => (float) ($stats->non_cash ?? 0),
+        ]);
     }
 
     public function reset_transaksi($id)

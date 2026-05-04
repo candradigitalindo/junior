@@ -24,10 +24,17 @@ class LoketController extends Controller
 
     private function baseLoketQuery()
     {
+        $today = now()->toDateString();
+
         return Booking::query()
             ->where('status', '!=', 'Selesai')
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year);
+            ->where(function ($query) use ($today) {
+                $query->whereDate('created_at', $today)
+                    ->orWhere(function ($unpaidQuery) {
+                        $unpaidQuery->whereNull('status_pembayaran')
+                            ->orWhere('status_pembayaran', '!=', 'Sudah Bayar');
+                    });
+            });
     }
 
     private function loketBookingQuery()

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Booking;
 use App\Models\Bookingorder;
 use App\Models\Histori;
@@ -17,42 +18,62 @@ use Illuminate\Support\Facades\Storage;
 
 class KasirController extends Controller
 {
-    private function getBookingData(Request $request)
+    private function resolveKasirDateRange(Request $request): array
     {
-        $threeMonthsAgo = now()->subMonths(3)->format('Y-m-d');
-        
+        $today = now()->toDateString();
+        $startInput = $request->start_date;
+        $endInput = $request->end_date;
+
+        // Default kasir view always uses daily data.
+        if (!$startInput && !$endInput) {
+            return [$today, $today];
+        }
+
+        if (!$startInput || !$endInput) {
+            throw new \InvalidArgumentException('Mohon pilih tanggal awal dan akhir secara lengkap.');
+        }
+
+        try {
+            $start = Carbon::parse($startInput)->startOfDay();
+            $end = Carbon::parse($endInput)->startOfDay();
+        } catch (\Throwable $e) {
+            throw new \InvalidArgumentException('Format tanggal tidak valid.');
+        }
+
+        $limit = now()->subMonths(3)->startOfDay();
+
+        if ($start->lt($limit) || $end->lt($limit)) {
+            throw new \InvalidArgumentException('Kasir hanya boleh filter data 3 bulan terakhir.');
+        }
+
+        if ($start->gt($end)) {
+            throw new \InvalidArgumentException('Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
+        }
+
+        return [$start->toDateString(), $end->toDateString()];
+    }
+
+    private function getBookingData(string $startDate, string $endDate)
+    {
         $query = Booking::with(['cekmasuk', 'transaksi', 'bookingorder', 'photocek', 'histori'])
             ->select('bookings.*')
+            ->whereBetween('bookings.tgl_booking', [$startDate, $endDate])
             ->orderBy('bookings.tgl_booking', 'DESC')
             ->orderBy('bookings.waktu_booking', 'DESC');
-
-        if ($request->start_date && $request->end_date) {
-            $start = $request->start_date;
-            // Enforce 3 months limit
-            if ($start < $threeMonthsAgo) {
-                $start = $threeMonthsAgo;
-            }
-            $query->whereBetween('bookings.tgl_booking', [$start, $request->end_date]);
-        } else {
-            $query->where('bookings.tgl_booking', date('Y-m-d'));
-        }
 
         return $query;
     }
 
     public function index(Request $request)
     {
-        $threeMonthsAgo = now()->subMonths(3)->format('Y-m-d');
-        $start = $request->start_date ?: date('Y-m-d');
-        $end = $request->end_date ?: date('Y-m-d');
-
-        // Enforce 3 months limit for summaries
-        if ($start < $threeMonthsAgo) {
-            $start = $threeMonthsAgo;
-        }
-
         if (request()->ajax()) {
-            $query = $this->getBookingData($request);
+            try {
+                [$start, $end] = $this->resolveKasirDateRange($request);
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            $query = $this->getBookingData($start, $end);
             
             // Robust calculation for summaries
             $summaryPaid = \DB::table('bookings')
@@ -115,6 +136,9 @@ class KasirController extends Controller
 
             if ($start && $end) {
                 $query->whereBetween('bookings.tgl_booking', [$start, $end]);
+            } else {
+                $query->whereMonth('bookings.tgl_booking', now()->month)
+                      ->whereYear('bookings.tgl_booking', now()->year);
             }
 
             // Calculate total for summary

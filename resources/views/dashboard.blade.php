@@ -149,8 +149,29 @@
                                     $mpColor = str_contains($mp, 'cash') ? 'success' : (str_contains($mp, 'qris') ? 'warning' : 'primary');
                                     $mpIcon  = str_contains($mp, 'cash') ? 'dollar-sign' : (str_contains($mp, 'qris') ? 'grid' : 'credit-card');
                                 @endphp
-                                <div class="w-9 h-9 rounded-circle bg-{{ $mpColor }}/10 d-flex align-items-center justify-content-center">
-                                    <i data-feather="{{ $mpIcon }}" class="text-{{ $mpColor }}" style="width:15px;height:15px;"></i>
+                                <div class="w-9 h-9 rounded-circle bg-{{ $mpColor }}/10 d-flex align-items-center justify-content-center text-{{ $mpColor }}">
+                                    @if ($mpIcon === 'dollar-sign')
+                                        {{-- Cash / Uang Tunai --}}
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="6" width="20" height="12" rx="2"/>
+                                            <circle cx="12" cy="12" r="2"/>
+                                            <path d="M6 12h.01M18 12h.01"/>
+                                        </svg>
+                                    @elseif ($mpIcon === 'grid')
+                                        {{-- QRIS --}}
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                            <path d="M14 14h1v1h-1zM18 14h1v1h-1zM14 18h1v1h-1zM18 18h3v3h-3zM14 21h1"/>
+                                        </svg>
+                                    @else
+                                        {{-- Transfer / Kartu --}}
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                            <line x1="1" y1="10" x2="23" y2="10"/>
+                                        </svg>
+                                    @endif
                                 </div>
                             </div>
                             <div class="flex-1 min-w-0">

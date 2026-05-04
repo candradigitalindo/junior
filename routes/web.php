@@ -229,6 +229,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
     Route::get('/admin/booking', [AdminController::class, 'booking'])->name('admin.booking');
     Route::get('/admin/transaksi', [AdminController::class, 'transaksi'])->name('admin.transaksi');
+    Route::get('/admin/transaksi/stats', [AdminController::class, 'transaksi_stats'])->name('admin.transaksi.stats');
     Route::get('/admin/histori', [AdminController::class, 'histori'])->name('admin.histori');
     Route::resource('tagmeta', TagmetaController::class);
     Route::resource('galery', GalryController::class);
